@@ -213,7 +213,7 @@ function syncAll() {
   if (dom.preventSleep) dom.preventSleep.checked = config.preventSleep !== false;
   if (dom.skipIntro) dom.skipIntro.checked = Boolean(config.skipIntro);
   if (dom.showRecent) dom.showRecent.checked = config.showRecent !== false;
-  const version = state.app ? state.app.version : '1.0.0';
+  const version = state.app ? state.app.version : '1.1.0';
   if (dom.aboutVersion) dom.aboutVersion.textContent = `v${version}`;
   if (dom.versionFoot) dom.versionFoot.textContent = version;
   syncNasStatus();
@@ -632,8 +632,8 @@ export function initSettings(options = {}) {
   bind();
   if (dom.close) setIcon(dom.close, 'close');
   if (dom.aboutMark) dom.aboutMark.innerHTML = ICON.sun;
-  if (dom.aboutVersion) dom.aboutVersion.textContent = `v${state.app ? state.app.version : '1.0.0'}`;
-  if (dom.versionFoot) dom.versionFoot.textContent = state.app ? state.app.version : '1.0.0';
+  if (dom.aboutVersion) dom.aboutVersion.textContent = `v${state.app ? state.app.version : '1.1.0'}`;
+  if (dom.versionFoot) dom.versionFoot.textContent = state.app ? state.app.version : '1.1.0';
   api.onNasStatus((status) => {
     state.nasStatus = status;
     syncNasStatus(status);
