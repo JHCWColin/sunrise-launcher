@@ -65,13 +65,12 @@ function startParticles(canvas) {
     window.removeEventListener('resize', resize);
     if (raf) cancelAnimationFrame(raf);
     raf = null;
+    try { ctx.clearRect(0, 0, width, height); } catch (_) { /* ignore */ }
   };
 }
 
-export function playIntro({ developer, reduceMotion = false, skip = false, onDone }) {
+export function playIntro({ reduceMotion = false, skip = false, onDone }) {
   const intro = $('#intro');
-  const devEl = $('#intro-dev');
-  if (devEl && developer) devEl.textContent = developer;
 
   let finished = false;
   let autoTimer = null;
@@ -118,16 +117,6 @@ export function playIntro({ developer, reduceMotion = false, skip = false, onDon
     if (stop) cleanupFns.push(stop);
   }
 
-  const skipButton = $('#intro-skip');
-  if (skipButton) {
-    const onClick = (event) => {
-      event.stopPropagation();
-      finish();
-    };
-    skipButton.addEventListener('click', onClick);
-    cleanupFns.push(() => skipButton.removeEventListener('click', onClick));
-  }
-
   const onPointer = () => {
     if (performance.now() < 700) return;
     finish();
@@ -141,7 +130,7 @@ export function playIntro({ developer, reduceMotion = false, skip = false, onDon
   window.addEventListener('keydown', onKey);
   cleanupFns.push(() => window.removeEventListener('keydown', onKey));
 
-  const duration = reduceMotion ? 2200 : 6500;
+  const duration = reduceMotion ? 2200 : 5500;
   autoTimer = setTimeout(finish, duration);
 }
 

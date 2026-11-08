@@ -15,6 +15,7 @@
 </head>
 <body>
   <div class="wallpaper" id="wallpaper" aria-hidden="true"></div>
+  <div class="wallpaper-dim" aria-hidden="true"></div>
   <div class="wallpaper-veil" aria-hidden="true"></div>
   <div class="ambient" aria-hidden="true">
     <span class="ambient-orb orb-a"></span>
@@ -30,7 +31,6 @@
       <div class="intro-sun"></div>
       <div class="intro-sun-core"></div>
     </div>
-    <div class="intro-horizon" aria-hidden="true"></div>
     <div class="intro-rays" aria-hidden="true"></div>
     <div class="intro-content">
       <h1 class="intro-title" id="intro-title" aria-label="旭日东升">
@@ -38,20 +38,18 @@
       </h1>
       <div class="intro-rule" aria-hidden="true"><i></i></div>
       <p class="intro-purpose">让每一堂课，一键启程</p>
-      <p class="intro-dev"><b id="intro-dev">溶液不呈电中性</b><span class="intro-x">×</span><span class="intro-ai-name">DeepSeek</span></p>
+      <p class="intro-dev" id="intro-dev">由JHCWColin与DeepSeek共同创作。</p>
     </div>
-    <button class="intro-skip" id="intro-skip" type="button">轻触进入</button>
-    <div class="intro-progress" aria-hidden="true"><i></i></div>
   </section>
 
   <main id="shell" class="shell" aria-hidden="true">
     <section class="home-left" aria-label="时间与日期">
       <div class="brand-mini">
         <span class="brand-mark" id="brand-mark" aria-hidden="true"></span>
-        <span class="brand-name">旭日东升</span>
+        <span class="brand-name">SUNRISE LAUNCHER</span>
       </div>
       <div class="clock-block">
-        <p class="greeting" id="greeting">早上好，老师</p>
+        <p class="greeting" id="greeting">早上好，丁老师</p>
         <div class="clock" id="clock">
           <span id="clock-main">07:28</span><span class="clock-sub" id="clock-sub">:23</span><span class="clock-ampm" id="clock-ampm"></span>
         </div>
@@ -65,7 +63,6 @@
           <span id="lunar-text">农历九月二十</span>
         </div>
       </div>
-      <p class="left-note">让每一堂课，一键启程</p>
     </section>
 
     <section class="home-right" aria-label="课堂入口">
@@ -73,10 +70,9 @@
         <div class="right-status" id="right-status"><span class="status-dot"></span><span id="right-status-text">连接课件库…</span></div>
       </div>
       <div class="action-grid" id="dock" aria-label="课堂应用"></div>
-      <div class="right-bottom">
-        <span id="bottom-version">v1.0.0</span>
-        <span class="bottom-sep" aria-hidden="true"></span>
-        <button id="bottom-downloads" class="link-btn" type="button">下载目录</button>
+      <div class="home-recent-block" id="home-recent-block">
+        <p class="home-recent-title">最近课件</p>
+        <div class="home-recent" id="home-recent" aria-label="最近课件"></div>
       </div>
     </section>
   </main>
@@ -117,7 +113,7 @@
           <div id="quick-locations" class="quick-list"></div>
         </div>
         <div class="side-section side-recent">
-          <p class="side-label">最近下载</p>
+          <p class="side-label">最近打开</p>
           <div id="side-recent" class="side-recent-list"></div>
         </div>
         <div class="side-footer">
@@ -200,6 +196,21 @@
         <div class="setting-row column">
           <div class="setting-label"><b>液态玻璃强度</b><span id="glass-value">100%</span></div>
           <input type="range" id="glass-range" min="35" max="160" step="5" value="100">
+        </div>
+        <div class="setting-row column">
+          <div class="setting-label"><b>暖白光晕</b><span id="glow-value">30%</span></div>
+          <input type="range" id="glow-range" min="0" max="150" step="5" value="30">
+        </div>
+        <div class="folder-card">
+          <div class="folder-card-text"><span>背景图片</span><b id="background-name" class="bg-file-name">默认壁纸</b></div>
+          <div class="folder-card-actions">
+            <button id="background-change" class="ghost-btn small" type="button">更换</button>
+            <button id="background-reset" class="ghost-btn small" type="button">默认</button>
+          </div>
+        </div>
+        <div class="setting-row column">
+          <div class="setting-label"><b>背景遮罩（黑色）</b><span id="bg-dim-value">55%</span></div>
+          <input type="range" id="bg-dim-range" min="0" max="90" step="5" value="55">
         </div>
         <div class="setting-row">
           <div class="setting-label"><b>降低动效</b><span>低配设备建议开启</span></div>
@@ -286,7 +297,7 @@
           <label class="switch"><input type="checkbox" id="skip-intro"><i></i></label>
         </div>
         <div class="setting-row">
-          <div class="setting-label"><b>显示最近课件</b><span>在桌面底部展示最近下载</span></div>
+          <div class="setting-label"><b>显示最近课件</b><span>在主界面展示最近打开的课件</span></div>
           <label class="switch"><input type="checkbox" id="show-recent"><i></i></label>
         </div>
         <div class="setting-row compact">
@@ -302,11 +313,10 @@
           <div class="about-text">
             <b>旭日东升</b>
             <span id="about-version">v1.0.0</span>
-            <span>为希沃教学一体机打造 · <b id="about-dev">溶液不呈电中性</b></span>
-            <span class="about-ai">AI 协作 · <b>DeepSeek</b></span>
+            <span>为希沃教学一体机打造</span>
+            <span class="about-credit">由JHCWColin与DeepSeek共同创作。</span>
           </div>
         </div>
-        <label class="field"><span>开发者署名</span><input id="developer-name" type="text" maxlength="40" autocomplete="off"></label>
         <div class="about-links">
           <button id="open-github" class="ghost-btn small" type="button">GitHub 仓库</button>
           <button id="open-logs" class="ghost-btn small" type="button">打开日志</button>

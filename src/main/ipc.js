@@ -17,10 +17,12 @@ const apps = require('./apps');
 const log = require('./logger');
 
 const CONFIG_KEYS = new Set([
-  'theme', 'accent', 'glass', 'reduceMotion', 'skipIntro', 'developer',
-  'clock24h', 'showSeconds', 'downloadsDir', 'autoOpen', 'autoOpenTypes',
+  'theme', 'accent', 'glass', 'glow', 'bgDim', 'background', 'reduceMotion',
+  'skipIntro', 'clock24h', 'showSeconds', 'downloadsDir', 'autoOpen', 'autoOpenTypes',
   'videoPlayer', 'wpsPath', 'autoStart', 'preventSleep', 'showRecent',
 ]);
+
+const BACKGROUND_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'];
 
 function sanitizePatch(raw) {
   if (!raw || typeof raw !== 'object') return null;
@@ -69,7 +71,6 @@ function statePayload(ctx) {
       nameEn: APP_NAME_EN,
       tagline: APP_TAGLINE,
       version: app.getVersion(),
-      developer: config.developer,
       github: GITHUB_URL,
       packaged: app.isPackaged,
       platform: process.platform,
@@ -128,6 +129,52 @@ function registerIpc(ctx) {
     const next = store.reset();
     ctx.applyConfigEffects(next, previous);
     return { ok: true, config: next, apps: apps.detect(next) };
+  });
+
+  ipcMain.handle('wallpaper:choose', async () => {
+    const win = ctx.getWindow();
+    const result = await dialog.showOpenDialog(win, {
+      title: '选择背景图片',
+      properties: ['openFile'],
+      filters: [{ name: '图片', extensions: BACKGROUND_EXTS }],
+      buttonLabel: '使用此图片',
+    });
+    if (result.canceled || !result.filePaths.length) return { ok: false, canceled: true };
+    const src = result.filePaths[0];
+    const ext = path.extname(src).toLowerCase().replace('.', '');
+    if (!BACKGROUND_EXTS.includes(ext)) {
+      return { ok: false, message: '请选择 JPG、PNG、WebP、BMP 或 GIF 图片。' };
+    }
+    let stat;
+    try { stat = fs.statSync(src); } catch (_) { return { ok: false, message: '图片不存在。' }; }
+    if (!stat.isFile()) return { ok: false, message: '请选择一张图片文件。' };
+    if (stat.size > 60 * 1024 * 1024) return { ok: false, message: '图片过大，请选择 60MB 以内的图片。' };
+
+    const userData = app.getPath('userData');
+    const bgDir = path.join(userData, 'backgrounds');
+    const safeName = path.basename(src).replace(/[\\/:*?"<>|]/g, '_').slice(0, 120) || `background.${ext}`;
+    const dest = path.join(bgDir, safeName);
+    try {
+      fs.mkdirSync(bgDir, { recursive: true });
+      if (path.resolve(src) !== path.resolve(dest)) {
+        fs.rmSync(dest, { force: true });
+        fs.copyFileSync(src, dest);
+      }
+    } catch (err) {
+      return { ok: false, message: `无法保存背景图片：${err.message}` };
+    }
+    // 清理旧背景副本，避免用户数据目录堆积。
+    try {
+      for (const name of fs.readdirSync(bgDir)) {
+        if (name === path.basename(dest)) continue;
+        fs.rmSync(path.join(bgDir, name), { force: true });
+      }
+    } catch (_) { /* ignore */ }
+
+    const previous = store.get();
+    const next = store.update({ background: dest });
+    ctx.applyConfigEffects(next, previous);
+    return { ok: true, config: next };
   });
 
   ipcMain.handle('app:set-auto-start', async (event, enabled) => {

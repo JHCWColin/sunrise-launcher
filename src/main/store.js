@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
-const { DEFAULT_DEVELOPER, NAS_DEFAULTS } = require('./constants');
+const { NAS_DEFAULTS } = require('./constants');
 const log = require('./logger');
 
 let configPath = '';
@@ -17,9 +17,11 @@ function defaultConfig() {
     theme: 'dark',
     accent: 'sunrise',
     glass: 1,
+    glow: 0.3,
+    bgDim: 0.55,
+    background: '',
     reduceMotion: false,
     skipIntro: false,
-    developer: DEFAULT_DEVELOPER,
     clock24h: true,
     showSeconds: false,
     nas: {
@@ -63,6 +65,20 @@ function normalizePathString(value, fallback) {
   let p = value.trim().replace(/\//g, '\\').replace(/\\+$/, '');
   if (!p) return fallback;
   return p;
+}
+
+const BACKGROUND_EXTS = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'];
+
+function normalizeBackground(value) {
+  if (typeof value !== 'string') return '';
+  const candidate = value.trim();
+  if (!candidate) return '';
+  if (!BACKGROUND_EXTS.includes(path.extname(candidate).toLowerCase())) return '';
+  try {
+    return fs.statSync(candidate).isFile() ? candidate : '';
+  } catch (_) {
+    return '';
+  }
 }
 
 function sanitizeRecent(list) {
@@ -113,6 +129,9 @@ function normalize(raw) {
   merged.theme = merged.theme === 'light' ? 'light' : 'dark';
   merged.accent = ['sunrise', 'ocean', 'violet', 'emerald'].includes(merged.accent) ? merged.accent : 'sunrise';
   merged.glass = clampNumber(merged.glass, 0.35, 1.6, 1);
+  merged.glow = clampNumber(merged.glow, 0, 1.5, 0.3);
+  merged.bgDim = clampNumber(merged.bgDim, 0, 0.9, 0.55);
+  merged.background = normalizeBackground(merged.background);
   merged.reduceMotion = Boolean(merged.reduceMotion);
   merged.skipIntro = Boolean(merged.skipIntro);
   merged.clock24h = Boolean(merged.clock24h);
@@ -121,9 +140,8 @@ function normalize(raw) {
   merged.autoStart = Boolean(merged.autoStart);
   merged.preventSleep = merged.preventSleep !== false;
   merged.showRecent = merged.showRecent !== false;
-  merged.developer = typeof merged.developer === 'string' && merged.developer.trim()
-    ? merged.developer.trim().slice(0, 40)
-    : DEFAULT_DEVELOPER;
+  // 开发者署名已固定，旧配置里的自定义署名不再生效。
+  delete merged.developer;
 
   merged.nas.host = typeof merged.nas.host === 'string' && merged.nas.host.trim()
     ? merged.nas.host.trim().slice(0, 120)
@@ -160,7 +178,6 @@ function envOverrides(cfg) {
   if (process.env.SUNRISE_DOWNLOADS_DIR) cfg.downloadsDir = process.env.SUNRISE_DOWNLOADS_DIR;
   if (process.env.SUNRISE_THEME) cfg.theme = process.env.SUNRISE_THEME;
   if (process.env.SUNRISE_SKIP_INTRO === '1') cfg.skipIntro = true;
-  if (process.env.SUNRISE_DEVELOPER) cfg.developer = process.env.SUNRISE_DEVELOPER;
   if (process.env.SUNRISE_AUTO_OPEN === '0') cfg.autoOpen = false;
   return cfg;
 }

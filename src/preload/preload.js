@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('sunrise', {
   getState: () => ipcRenderer.invoke('app:get-state'),
   updateConfig: (patch) => ipcRenderer.invoke('config:update', patch),
   resetConfig: () => ipcRenderer.invoke('config:reset'),
+  chooseBackground: () => ipcRenderer.invoke('wallpaper:choose'),
   setAutoStart: (enabled) => ipcRenderer.invoke('app:set-auto-start', enabled),
 
   launchApp: (key) => ipcRenderer.invoke('launch:app', key),

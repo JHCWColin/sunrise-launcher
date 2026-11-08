@@ -150,7 +150,7 @@ function renderSideRecent() {
   if (!dom.sideRecent) return;
   const recent = state.recent || [];
   if (!recent.length) {
-    dom.sideRecent.innerHTML = '<p class="side-empty">下载过的课件会出现在这里。</p>';
+    dom.sideRecent.innerHTML = '<p class="side-empty">打开过的课件会出现在这里。</p>';
     return;
   }
   dom.sideRecent.innerHTML = recent.slice(0, 5).map((item) => {

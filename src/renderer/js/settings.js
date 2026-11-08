@@ -1,8 +1,8 @@
 import api from './api.js';
 import { ICON, fileVisual } from './icons.js';
 import {
-  $, $$, applyAccent, applyGlass, applyMotion, applyTheme, confirmDialog,
-  copyText, debounce, escapeHtml, openModal, setIcon, toast,
+  $, applyAccent, applyBackground, applyBgDim, applyGlass, applyGlow, applyMotion, applyTheme,
+  confirmDialog, copyText, debounce, escapeHtml, openModal, setIcon, toast,
 } from './ui.js';
 import { mergeConfig, state } from './state.js';
 import { refreshHome, updateThemeIcon } from './home.js';
@@ -25,20 +25,31 @@ let dom = {};
 let open = false;
 let syncing = false;
 
-const saveDeveloper = debounce(async (value) => {
-  const res = await api.updateConfig({ developer: value });
-  if (!res || !res.ok) {
-    toast({ type: 'error', message: (res && res.message) || '保存开发者署名失败' });
-    return;
-  }
-  mergeConfig(res.config);
-  updateDeveloperLabels();
-}, 500);
-
 const saveGlass = debounce(async (value) => {
   const res = await api.updateConfig({ glass: value });
   if (res && res.ok) mergeConfig(res.config);
 }, 260);
+
+const saveGlow = debounce(async (value) => {
+  const res = await api.updateConfig({ glow: value });
+  if (res && res.ok) mergeConfig(res.config);
+}, 260);
+
+const saveBgDim = debounce(async (value) => {
+  const res = await api.updateConfig({ bgDim: value });
+  if (res && res.ok) mergeConfig(res.config);
+}, 260);
+
+function fileNameOf(filePath) {
+  const parts = String(filePath || '').split(/[\\/]/);
+  return parts[parts.length - 1] || '';
+}
+
+function paintRange(range, value, min, max) {
+  if (!range) return;
+  const pct = ((value - min) / (max - min)) * 100;
+  range.style.background = `linear-gradient(90deg, var(--accent) 0%, var(--accent) ${pct}%, rgba(255,255,255,.12) ${pct}%)`;
+}
 
 function cacheDom() {
   dom.drawer = $('#settings-drawer');
@@ -49,6 +60,13 @@ function cacheDom() {
   dom.swatches = $('#accent-swatches');
   dom.glassRange = $('#glass-range');
   dom.glassValue = $('#glass-value');
+  dom.glowRange = $('#glow-range');
+  dom.glowValue = $('#glow-value');
+  dom.bgDimRange = $('#bg-dim-range');
+  dom.bgDimValue = $('#bg-dim-value');
+  dom.backgroundName = $('#background-name');
+  dom.backgroundChange = $('#background-change');
+  dom.backgroundReset = $('#background-reset');
   dom.reduceMotion = $('#reduce-motion');
   dom.clock24h = $('#clock-24h');
   dom.clockSeconds = $('#clock-seconds');
@@ -71,9 +89,7 @@ function cacheDom() {
   dom.showRecent = $('#show-recent');
   dom.aboutMark = $('#about-mark');
   dom.aboutVersion = $('#about-version');
-  dom.aboutDev = $('#about-dev');
   dom.versionFoot = $('#foot-version');
-  dom.developer = $('#developer-name');
   dom.github = $('#open-github');
   dom.logs = $('#open-logs');
   dom.config = $('#open-config');
@@ -91,14 +107,6 @@ function buildTypeGrid() {
       <span>${label}</span>
     </label>
   `).join('');
-}
-
-function updateDeveloperLabels() {
-  const name = (state.config && state.config.developer) || '溶液不呈电中性';
-  if (dom.aboutDev) dom.aboutDev.textContent = name;
-  const introDev = $('#intro-dev');
-  if (introDev) introDev.textContent = name;
-  if (dom.developer && document.activeElement !== dom.developer) dom.developer.value = name;
 }
 
 function syncThemeSegmented() {
@@ -122,10 +130,39 @@ function syncGlass() {
   const percent = Math.round(value * 100);
   if (dom.glassRange) {
     dom.glassRange.value = String(percent);
-    const pct = ((percent - 35) / (160 - 35)) * 100;
-    dom.glassRange.style.background = `linear-gradient(90deg, var(--accent) 0%, var(--accent) ${pct}%, rgba(255,255,255,.12) ${pct}%)`;
+    paintRange(dom.glassRange, percent, 35, 160);
   }
   if (dom.glassValue) dom.glassValue.textContent = `${percent}%`;
+}
+
+function syncGlow() {
+  const raw = state.config ? Number(state.config.glow) : 0.3;
+  const value = Number.isFinite(raw) ? raw : 0.3;
+  const percent = Math.round(value * 100);
+  if (dom.glowRange) {
+    dom.glowRange.value = String(percent);
+    paintRange(dom.glowRange, percent, 0, 150);
+  }
+  if (dom.glowValue) dom.glowValue.textContent = `${percent}%`;
+}
+
+function syncBgDim() {
+  const raw = state.config ? Number(state.config.bgDim) : 0.55;
+  const value = Number.isFinite(raw) ? raw : 0.55;
+  const percent = Math.round(value * 100);
+  if (dom.bgDimRange) {
+    dom.bgDimRange.value = String(percent);
+    paintRange(dom.bgDimRange, percent, 0, 90);
+  }
+  if (dom.bgDimValue) dom.bgDimValue.textContent = `${percent}%`;
+}
+
+function syncBackground() {
+  if (!dom.backgroundName) return;
+  const filePath = state.config ? state.config.background : '';
+  dom.backgroundName.textContent = filePath ? fileNameOf(filePath) : '默认壁纸';
+  dom.backgroundName.title = filePath || '内置 Golden Gate 壁纸';
+  if (dom.backgroundReset) dom.backgroundReset.disabled = !filePath;
 }
 
 function syncNasStatus(status = state.nasStatus) {
@@ -153,6 +190,9 @@ function syncAll() {
   syncThemeSegmented();
   syncAccent();
   syncGlass();
+  syncGlow();
+  syncBgDim();
+  syncBackground();
   if (dom.reduceMotion) dom.reduceMotion.checked = Boolean(config.reduceMotion);
   if (dom.clock24h) dom.clock24h.checked = config.clock24h !== false;
   if (dom.clockSeconds) dom.clockSeconds.checked = Boolean(config.showSeconds);
@@ -173,7 +213,6 @@ function syncAll() {
   if (dom.preventSleep) dom.preventSleep.checked = config.preventSleep !== false;
   if (dom.skipIntro) dom.skipIntro.checked = Boolean(config.skipIntro);
   if (dom.showRecent) dom.showRecent.checked = config.showRecent !== false;
-  if (dom.developer) dom.developer.value = config.developer || '溶液不呈电中性';
   const version = state.app ? state.app.version : '1.0.0';
   if (dom.aboutVersion) dom.aboutVersion.textContent = `v${version}`;
   if (dom.versionFoot) dom.versionFoot.textContent = version;
@@ -303,11 +342,62 @@ function bind() {
     dom.glassRange.addEventListener('input', () => {
       const percent = Number(dom.glassRange.value) || 100;
       if (dom.glassValue) dom.glassValue.textContent = `${percent}%`;
-      const pct = ((percent - 35) / (160 - 35)) * 100;
-      dom.glassRange.style.background = `linear-gradient(90deg, var(--accent) 0%, var(--accent) ${pct}%, rgba(255,255,255,.12) ${pct}%)`;
+      paintRange(dom.glassRange, percent, 35, 160);
       applyGlass(percent / 100);
       if (state.config) state.config.glass = percent / 100;
       saveGlass(percent / 100);
+    });
+  }
+
+  if (dom.glowRange) {
+    dom.glowRange.addEventListener('input', () => {
+      const percent = Number(dom.glowRange.value) || 0;
+      if (dom.glowValue) dom.glowValue.textContent = `${percent}%`;
+      paintRange(dom.glowRange, percent, 0, 150);
+      applyGlow(percent / 100);
+      if (state.config) state.config.glow = percent / 100;
+      saveGlow(percent / 100);
+    });
+  }
+
+  if (dom.bgDimRange) {
+    dom.bgDimRange.addEventListener('input', () => {
+      const percent = Number(dom.bgDimRange.value) || 0;
+      if (dom.bgDimValue) dom.bgDimValue.textContent = `${percent}%`;
+      paintRange(dom.bgDimRange, percent, 0, 90);
+      applyBgDim(percent / 100);
+      if (state.config) state.config.bgDim = percent / 100;
+      saveBgDim(percent / 100);
+    });
+  }
+
+  if (dom.backgroundChange) {
+    dom.backgroundChange.addEventListener('click', async () => {
+      const result = await api.chooseBackground();
+      if (!result || result.canceled) return;
+      if (!result.ok) {
+        toast({ type: 'error', message: result.message || '无法设置背景图片' });
+        return;
+      }
+      mergeConfig(result.config);
+      applyBackground(result.config.background);
+      syncBackground();
+      toast({ type: 'success', message: '背景图片已更新。', duration: 2800 });
+    });
+  }
+
+  if (dom.backgroundReset) {
+    dom.backgroundReset.addEventListener('click', async () => {
+      if (!state.config || !state.config.background) return;
+      const result = await api.updateConfig({ background: '' });
+      if (!result || !result.ok) {
+        toast({ type: 'error', message: (result && result.message) || '无法恢复默认背景' });
+        return;
+      }
+      mergeConfig(result.config);
+      applyBackground('');
+      syncBackground();
+      toast({ type: 'success', message: '已恢复默认壁纸。', duration: 2600 });
     });
   }
 
@@ -443,18 +533,6 @@ function bind() {
     });
   }
 
-  if (dom.developer) {
-    dom.developer.addEventListener('input', () => {
-      const value = dom.developer.value.trim().slice(0, 40) || '溶液不呈电中性';
-      if (state.config) state.config.developer = value;
-      updateDeveloperLabels();
-      saveDeveloper(value);
-    });
-    dom.developer.addEventListener('blur', () => {
-      if (!dom.developer.value.trim()) dom.developer.value = '溶液不呈电中性';
-    });
-  }
-
   if (dom.github) {
     dom.github.addEventListener('click', async () => {
       const url = (state.app && state.app.github) || 'https://github.com/JHCWColin/sunrise-launcher';
@@ -502,7 +580,7 @@ function bind() {
     dom.reset.addEventListener('click', async () => {
       const ok = await confirmDialog({
         title: '恢复默认设置？',
-        message: '主题、时钟、NAS 地址、下载与自动打开设置都会恢复为默认。已下载的课件不会被删除。',
+        message: '主题、背景、光晕、时钟、NAS 地址、下载与自动打开设置都会恢复为默认。已下载的课件不会被删除。',
         confirmLabel: '恢复默认',
         danger: false,
         icon: 'refresh',
@@ -515,6 +593,9 @@ function bind() {
         applyTheme(result.config.theme);
         applyAccent(result.config.accent);
         applyGlass(result.config.glass);
+        applyGlow(result.config.glow);
+        applyBgDim(result.config.bgDim);
+        applyBackground(result.config.background);
         applyMotion(result.config.reduceMotion);
         setClockConfig(result.config);
         syncAll();
@@ -553,7 +634,6 @@ export function initSettings(options = {}) {
   if (dom.aboutMark) dom.aboutMark.innerHTML = ICON.sun;
   if (dom.aboutVersion) dom.aboutVersion.textContent = `v${state.app ? state.app.version : '1.0.0'}`;
   if (dom.versionFoot) dom.versionFoot.textContent = state.app ? state.app.version : '1.0.0';
-  updateDeveloperLabels();
   api.onNasStatus((status) => {
     state.nasStatus = status;
     syncNasStatus(status);

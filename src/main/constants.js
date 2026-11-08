@@ -6,8 +6,7 @@ const APP_NAME = '旭日东升';
 const APP_NAME_EN = 'SUNRISE LAUNCHER';
 const APP_TAGLINE = '让每一堂课，一键启程';
 const APP_ID = 'com.jhcwcolin.sunrise';
-const DEFAULT_DEVELOPER = '溶液不呈电中性';
-const AI_CREDIT = 'DeepSeek';
+const DEVELOPER_CREDIT = '由JHCWColin与DeepSeek共同创作。';
 const GITHUB_URL = 'https://github.com/JHCWColin/sunrise-launcher';
 
 // 班级部署内置的 NAS 教师账号。使用轻量异或编码，避免在源码与日志中直接出现明文。
@@ -139,8 +138,7 @@ module.exports = {
   APP_NAME_EN,
   APP_TAGLINE,
   APP_ID,
-  DEFAULT_DEVELOPER,
-  AI_CREDIT,
+  DEVELOPER_CREDIT,
   GITHUB_URL,
   NAS_USER,
   NAS_PASS,

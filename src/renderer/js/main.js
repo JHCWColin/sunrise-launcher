@@ -1,8 +1,8 @@
 import api from './api.js';
 import { setStateFromPayload, state } from './state.js';
 import {
-  $, applyAccent, applyGlass, applyMotion, applyTheme, closeActiveModal,
-  initCursorIdle, toast,
+  $, applyAccent, applyBackground, applyBgDim, applyGlass, applyGlow, applyMotion, applyTheme,
+  closeActiveModal, initCursorIdle, toast,
 } from './ui.js';
 import {
   initHome, refreshHome, refreshRecent, updateNasPill, updateThemeIcon,
@@ -179,6 +179,9 @@ async function boot() {
   applyTheme(config.theme);
   applyAccent(config.accent);
   applyGlass(config.glass);
+  applyGlow(config.glow);
+  applyBgDim(config.bgDim);
+  applyBackground(config.background);
   applyMotion(config.reduceMotion);
 
   initHome({
@@ -205,11 +208,7 @@ async function boot() {
   initCursorIdle();
   startClock(config);
 
-  const introDev = $('#intro-dev');
-  if (introDev) introDev.textContent = config.developer;
-
   playIntro({
-    developer: config.developer,
     reduceMotion: config.reduceMotion,
     skip: config.skipIntro,
     onDone: () => {

@@ -55,14 +55,16 @@ export function relativeTime(ms) {
   return `${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+const TEACHER_LABEL = '丁老师';
+
 export function greetingForHour(hour) {
-  if (hour < 5) return '夜深了，老师';
-  if (hour < 9) return '早上好，老师';
-  if (hour < 12) return '上午好，老师';
-  if (hour < 14) return '中午好，老师';
-  if (hour < 18) return '下午好，老师';
-  if (hour < 23) return '晚上好，老师';
-  return '夜深了，老师';
+  if (hour < 5) return `夜深了，${TEACHER_LABEL}`;
+  if (hour < 9) return `早上好，${TEACHER_LABEL}`;
+  if (hour < 12) return `上午好，${TEACHER_LABEL}`;
+  if (hour < 14) return `中午好，${TEACHER_LABEL}`;
+  if (hour < 18) return `下午好，${TEACHER_LABEL}`;
+  if (hour < 23) return `晚上好，${TEACHER_LABEL}`;
+  return `夜深了，${TEACHER_LABEL}`;
 }
 
 export function debounce(fn, wait = 200) {
@@ -96,6 +98,30 @@ export function applyAccent(accent) {
 export function applyGlass(value) {
   const scale = Math.min(1.6, Math.max(0.35, Number(value) || 1));
   document.documentElement.style.setProperty('--glass-scale', String(scale));
+}
+
+export function applyGlow(value) {
+  const n = Number(value);
+  const scale = Number.isFinite(n) ? Math.min(1.5, Math.max(0, n)) : 0.3;
+  document.documentElement.style.setProperty('--glow-scale', String(scale));
+}
+
+export function applyBgDim(value) {
+  const n = Number(value);
+  const dim = Number.isFinite(n) ? Math.min(0.9, Math.max(0, n)) : 0.55;
+  document.documentElement.style.setProperty('--bg-dim', String(dim));
+}
+
+export function applyBackground(filePath) {
+  const wallpaper = document.getElementById('wallpaper');
+  if (!wallpaper) return;
+  if (filePath) {
+    wallpaper.style.backgroundImage = `url("app://sunrise/__wallpaper__?v=${Date.now()}")`;
+    wallpaper.classList.add('has-custom');
+  } else {
+    wallpaper.style.backgroundImage = '';
+    wallpaper.classList.remove('has-custom');
+  }
 }
 
 export function applyMotion(reduce) {

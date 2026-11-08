@@ -10,7 +10,6 @@ const ACTIONS = [
     key: 'wps',
     kind: 'app',
     name: 'WPS Office',
-    sub: '文档 · 表格 · 演示',
     icon: APP_ICON.wps,
     rgb: '168, 196, 236',
     rgbLight: '91, 127, 168',
@@ -19,7 +18,6 @@ const ACTIONS = [
     key: 'board',
     kind: 'app',
     name: '希沃白板',
-    sub: '互动课件',
     icon: APP_ICON.board,
     rgb: '182, 201, 164',
     rgbLight: '111, 138, 94',
@@ -28,7 +26,6 @@ const ACTIONS = [
     key: 'camera',
     kind: 'app',
     name: '视频展台',
-    sub: '实物展示',
     icon: APP_ICON.camera,
     rgb: '201, 184, 232',
     rgbLight: '128, 106, 156',
@@ -37,7 +34,6 @@ const ACTIONS = [
     key: 'ftp',
     kind: 'ftp',
     name: 'FTP 课件',
-    sub: '高三 · 语文',
     icon: APP_ICON.ftp,
     rgb: '232, 154, 120',
     rgbLight: '196, 99, 63',
@@ -46,7 +42,6 @@ const ACTIONS = [
     key: 'recent',
     kind: 'recent',
     name: '最近课件',
-    sub: '最近下载',
     icon: ICON.folderOpen,
     rgb: '232, 217, 196',
     rgbLight: '120, 98, 80',
@@ -55,7 +50,6 @@ const ACTIONS = [
     key: 'downloads',
     kind: 'downloads',
     name: '下载目录',
-    sub: '打开文件夹',
     icon: ICON.download,
     rgb: '232, 217, 196',
     rgbLight: '120, 98, 80',
@@ -64,7 +58,6 @@ const ACTIONS = [
     key: 'theme',
     kind: 'theme',
     name: '切换主题',
-    sub: '深色 / 浅色',
     icon: ICON.moon,
     rgb: '232, 217, 196',
     rgbLight: '120, 98, 80',
@@ -73,7 +66,6 @@ const ACTIONS = [
     key: 'settings',
     kind: 'settings',
     name: '设置',
-    sub: '连接与退出',
     icon: ICON.gear,
     rgb: '217, 119, 87',
     rgbLight: '201, 100, 66',
@@ -90,7 +82,6 @@ function renderDock() {
       style="--item-rgb:${action.rgb};--item-rgb-light:${action.rgbLight}">
       <span class="action-icon">${action.icon}</span>
       <span class="action-name">${action.name}</span>
-      <span class="action-sub">${action.sub}</span>
     </button>
   `).join('');
 
@@ -143,9 +134,6 @@ async function handleAction(action, item) {
   }
 
   item.classList.add('is-busy');
-  const sub = item.querySelector('.action-sub');
-  const originalSub = sub ? sub.textContent : '';
-  if (sub) sub.textContent = '正在启动…';
   try {
     const result = await api.launchApp(action.key);
     if (result && result.ok) {
@@ -159,7 +147,6 @@ async function handleAction(action, item) {
     toast({ type: 'error', message: `启动失败：${err.message}`, duration: 6000 });
   } finally {
     item.classList.remove('is-busy');
-    if (sub) sub.textContent = originalSub;
   }
 }
 
@@ -177,14 +164,6 @@ function updateRightStatus(status = state.nasStatus) {
   else if (status.state === 'offline') text.textContent = '课件库未连接';
   else text.textContent = '课件库待连接';
   box.title = status.message || '';
-
-  const ftpSub = document.querySelector('[data-action="ftp"] .action-sub');
-  if (ftpSub) {
-    if (status.state === 'online') ftpSub.textContent = '已连接 · 高三语文';
-    else if (status.state === 'checking') ftpSub.textContent = '正在连接…';
-    else if (status.state === 'offline') ftpSub.textContent = '未连接 · 点按重试';
-    else ftpSub.textContent = '高三 · 语文';
-  }
 }
 
 function updateThemeAction() {
@@ -192,9 +171,7 @@ function updateThemeAction() {
   if (!item) return;
   const light = state.config && state.config.theme === 'light';
   const icon = item.querySelector('.action-icon');
-  const sub = item.querySelector('.action-sub');
   if (icon) setIcon(icon, light ? 'moon' : 'sunSmall');
-  if (sub) sub.textContent = light ? '切换到深色' : '切换到浅色';
 }
 
 export function updateThemeIcon() {
@@ -213,8 +190,6 @@ function applyAvailability() {
     const info = state.apps && state.apps[action.key];
     const missing = info && info.available === false;
     item.classList.toggle('is-missing', Boolean(missing));
-    const sub = item.querySelector('.action-sub');
-    if (sub && missing) sub.textContent = '未安装';
   });
 }
 
@@ -226,8 +201,8 @@ function renderRecentSheet() {
     list.innerHTML = `
       <div class="recent-sheet-empty">
         <span class="recent-sheet-empty-icon">${ICON.folderOpen}</span>
-        <p>还没有下载课件</p>
-        <span>从 FTP 课件中选择文件，下载后会自动出现在这里。</span>
+        <p>还没有打开过课件</p>
+        <span>从 FTP 课件中打开文件后，会自动出现在这里。</span>
       </div>
     `;
     return;
@@ -296,7 +271,7 @@ function updateSideRecent() {
   if (!box) return;
   const recent = state.recent || [];
   if (!recent.length) {
-    box.innerHTML = '<p class="side-empty">下载过的课件会出现在这里。</p>';
+    box.innerHTML = '<p class="side-empty">打开过的课件会出现在这里。</p>';
     return;
   }
   box.innerHTML = recent.slice(0, 5).map((item) => {
@@ -326,15 +301,49 @@ function updateSideRecent() {
   });
 }
 
+function renderHomeRecent() {
+  const block = $('#home-recent-block');
+  const box = $('#home-recent');
+  if (!box) return;
+  const enabled = !state.config || state.config.showRecent !== false;
+  if (block) block.classList.toggle('is-hidden', !enabled);
+  if (!enabled) return;
+
+  const recent = Array.isArray(state.recent) ? state.recent : [];
+  if (!recent.length) {
+    box.innerHTML = `
+      <div class="home-recent-empty">
+        ${ICON.folderOpen}
+        <span>打开过的课件会出现在这里</span>
+      </div>
+    `;
+    return;
+  }
+
+  box.innerHTML = recent.map((item) => {
+    const ext = item.ext || extOfName(item.name || item.path);
+    const visual = fileVisual(ext, false);
+    const time = relativeTime(item.at);
+    const meta = time.startsWith('今天 ') ? time.slice(3) : time;
+    return `
+      <button class="home-recent-item" type="button" data-path="${escapeHtml(item.path)}" title="${escapeHtml(item.name)}">
+        <span class="home-recent-icon" style="--chip-rgb:${visual.rgb}">${visual.svg}</span>
+        <span class="home-recent-text">
+          <b>${escapeHtml(item.name)}</b>
+          <span>${escapeHtml(meta)}</span>
+        </span>
+      </button>
+    `;
+  }).join('');
+}
+
 export function renderHome() {
-  const version = state.app ? state.app.version : '1.0.0';
-  const bottomVersion = $('#bottom-version');
-  if (bottomVersion) bottomVersion.textContent = `v${version}`;
   applyAvailability();
   updateRightStatus();
   updateThemeAction();
   updateSideRecent();
   renderRecentSheet();
+  renderHomeRecent();
 }
 
 export function refreshHome() {
@@ -344,6 +353,7 @@ export function refreshHome() {
 export function refreshRecent() {
   renderRecentSheet();
   updateSideRecent();
+  renderHomeRecent();
 }
 
 export function initHome(options = {}) {
@@ -371,11 +381,24 @@ export function initHome(options = {}) {
     });
   }
 
-  const bottomDownloads = $('#bottom-downloads');
-  if (bottomDownloads) {
-    bottomDownloads.addEventListener('click', async () => {
-      const result = await api.openDownloadsFolder();
-      if (result && result.ok === false) toast({ type: 'error', message: result.message || '无法打开下载文件夹' });
+  const homeRecent = $('#home-recent');
+  if (homeRecent) {
+    homeRecent.addEventListener('click', async (event) => {
+      const item = event.target.closest('.home-recent-item');
+      if (!item) return;
+      const path = item.dataset.path;
+      if (!path) return;
+      item.classList.add('is-busy');
+      try {
+        const result = await api.openDownloadFile(path);
+        if (result && result.ok === false) {
+          toast({ type: 'error', message: result.message || '无法打开文件', duration: 5600 });
+        }
+      } catch (err) {
+        toast({ type: 'error', message: `无法打开文件：${err.message}`, duration: 5600 });
+      } finally {
+        item.classList.remove('is-busy');
+      }
     });
   }
 

@@ -140,6 +140,7 @@ function mimeFor(filePath) {
     '.jpeg': 'image/jpeg',
     '.webp': 'image/webp',
     '.gif': 'image/gif',
+    '.bmp': 'image/bmp',
     '.ico': 'image/x-icon',
     '.otf': 'font/otf',
     '.ttf': 'font/ttf',
@@ -152,6 +153,11 @@ function mimeFor(filePath) {
   return map[ext] || 'application/octet-stream';
 }
 
+function pathInside(root, target) {
+  const rel = path.relative(path.resolve(root), path.resolve(target));
+  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+}
+
 function registerAppProtocol() {
   protocol.handle('app', async (request) => {
     try {
@@ -159,6 +165,28 @@ function registerAppProtocol() {
       let rel = decodeURIComponent(url.pathname || '/');
       if (rel === '/' || rel === '') rel = '/index.html';
       rel = rel.replace(/^\/+/, '');
+
+      // 自定义背景图：只允许读取用户数据目录内的文件。
+      if (rel === '__wallpaper__') {
+        const target = store.get().background;
+        if (!target || !pathInside(app.getPath('userData'), target)) {
+          return new Response('Not found', { status: 404 });
+        }
+        try {
+          if (!fs.statSync(target).isFile()) return new Response('Not found', { status: 404 });
+        } catch (_) {
+          return new Response('Not found', { status: 404 });
+        }
+        const data = await fs.promises.readFile(target);
+        return new Response(data, {
+          status: 200,
+          headers: {
+            'Content-Type': mimeFor(target),
+            'Cache-Control': 'no-store',
+          },
+        });
+      }
+
       const filePath = path.normalize(path.join(RENDERER_ROOT, rel));
       if (!filePath.startsWith(RENDERER_ROOT + path.sep) && filePath !== RENDERER_ROOT) {
         return new Response('Forbidden', { status: 403 });
@@ -350,6 +378,11 @@ function openDownloaded(filePath, source = 'watcher', force = false) {
 
   apps.openFile(filePath, config).then((result) => {
     log.info('打开文件结果:', filePath, JSON.stringify(result));
+    if (result.ok) {
+      // 只要成功打开过（视频、图片、文档等）就记入「最近课件」。
+      const next = store.addRecent(filePath, source === 'watcher' ? 'local' : 'nas');
+      send('recent:updated', next);
+    }
     if (result.ok && result.mode === 'internal-image') {
       send('viewer:open', {
         path: filePath,

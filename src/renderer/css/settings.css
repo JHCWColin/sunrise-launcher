@@ -428,6 +428,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
   direction: rtl;
   text-align: left;
 }
+.folder-card-text b.bg-file-name {
+  direction: ltr;
+  text-align: left;
+}
 .folder-card-actions {
   display: flex;
   gap: 6px;
@@ -549,8 +553,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
   letter-spacing: 0.02em;
   color: var(--text-2);
 }
-.about-text .about-ai b {
-  color: #a8c4ec;
+.about-text .about-credit {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--accent);
 }
 .about-links {
   display: flex;

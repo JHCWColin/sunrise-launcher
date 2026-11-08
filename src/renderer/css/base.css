@@ -5,6 +5,7 @@
   --bg: #131110;
   --text: #f4efe6;
   --text-2: rgba(244, 239, 230, 0.68);
+  --text-2-strong: rgba(244, 239, 230, 0.86);
   --text-3: rgba(244, 239, 230, 0.44);
   --text-4: rgba(244, 239, 230, 0.21);
 
@@ -30,6 +31,8 @@
 
   --blur: 24px;
   --glass-scale: 1;
+  --glow-scale: 0.3;
+  --bg-dim: 0.55;
   --radius-xl: 34px;
   --radius-lg: 26px;
   --radius-md: 18px;
@@ -42,6 +45,7 @@
   --bg: #f4eee4;
   --text: #2b2620;
   --text-2: rgba(43, 38, 32, 0.72);
+  --text-2-strong: rgba(43, 38, 32, 0.88);
   --text-3: rgba(43, 38, 32, 0.50);
   --text-4: rgba(43, 38, 32, 0.21);
   --glass-bg: rgba(255, 252, 247, 0.56);
@@ -192,18 +196,31 @@ a {
   background-position: center 42%;
   transform: scale(1.02);
   animation: wallpaperDrift 90s ease-in-out infinite alternate;
-  filter: saturate(0.72) sepia(0.18) brightness(0.78) contrast(1.02);
+  filter: saturate(0.72) sepia(0.18) contrast(1.02);
   will-change: transform;
+}
+.wallpaper.has-custom {
+  background-position: center center;
+}
+
+.wallpaper-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: #000;
+  opacity: var(--bg-dim);
+  pointer-events: none;
+  transition: opacity 0.35s ease;
 }
 
 .wallpaper-veil {
   position: fixed;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   background:
-    radial-gradient(120% 80% at 76% 18%, rgba(217, 119, 87, 0.22), transparent 54%),
-    radial-gradient(90% 70% at 18% 88%, rgba(72, 48, 32, 0.32), transparent 60%),
-    linear-gradient(180deg, rgba(19, 16, 13, 0.62) 0%, rgba(19, 16, 13, 0.40) 42%, rgba(19, 16, 13, 0.84) 100%);
+    radial-gradient(120% 80% at 76% 18%, rgba(217, 119, 87, calc(0.32 * var(--glow-scale))), transparent 54%),
+    radial-gradient(90% 70% at 18% 88%, rgba(72, 48, 32, calc(0.42 * var(--glow-scale))), transparent 60%),
+    linear-gradient(180deg, rgba(19, 16, 13, 0.20) 0%, rgba(19, 16, 13, 0.10) 42%, rgba(19, 16, 13, 0.42) 100%);
   pointer-events: none;
 }
 
@@ -213,9 +230,9 @@ a {
 }
 [data-theme="light"] .wallpaper-veil {
   background:
-    radial-gradient(110% 80% at 78% 12%, rgba(255, 213, 170, 0.50), transparent 55%),
-    radial-gradient(90% 70% at 12% 92%, rgba(255, 239, 216, 0.62), transparent 60%),
-    linear-gradient(180deg, rgba(247, 242, 234, 0.82) 0%, rgba(246, 240, 231, 0.64) 45%, rgba(242, 235, 225, 0.90) 100%);
+    radial-gradient(110% 80% at 78% 12%, rgba(255, 213, 170, calc(0.46 * var(--glow-scale))), transparent 55%),
+    radial-gradient(90% 70% at 12% 92%, rgba(255, 239, 216, calc(0.54 * var(--glow-scale))), transparent 60%),
+    linear-gradient(180deg, rgba(247, 242, 234, 0.86) 0%, rgba(246, 240, 231, 0.68) 45%, rgba(242, 235, 225, 0.90) 100%);
 }
 
 .ambient {
@@ -230,7 +247,8 @@ a {
   position: absolute;
   border-radius: 50%;
   filter: blur(70px);
-  opacity: 0.55;
+  opacity: calc(0.55 * var(--glow-scale));
+  transition: opacity 0.35s ease;
   will-change: transform;
 }
 .orb-a {
@@ -258,7 +276,7 @@ a {
   animation: orbFloatC 22s ease-in-out infinite alternate;
 }
 [data-theme="light"] .ambient-orb {
-  opacity: 0.5;
+  opacity: calc(0.5 * var(--glow-scale));
   filter: blur(80px);
 }
 
@@ -427,6 +445,10 @@ select:focus-visible {
 }
 .ghost-btn.wide {
   width: 100%;
+}
+.ghost-btn:disabled {
+  opacity: 0.38;
+  pointer-events: none;
 }
 .danger-text {
   color: var(--danger);
