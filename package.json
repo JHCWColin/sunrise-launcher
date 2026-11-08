@@ -1,0 +1,84 @@
+{
+  "name": "sunrise-launcher",
+  "version": "1.0.0",
+  "private": true,
+  "description": "旭日东升 · 希沃教学一体机无障碍桌面启动器",
+  "author": {
+    "name": "溶液不呈电中性",
+    "email": "jhcwcolin@gmail.com",
+    "url": "https://github.com/JHCWColin"
+  },
+  "license": "MIT",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "node tools/start.js",
+    "dev": "node tools/dev.js",
+    "mock": "node tools/mock-nas.js",
+    "test:nas": "node tools/test-nas.js",
+    "build:dir": "electron-builder --win --dir --x64",
+    "dist": "electron-builder --win nsis portable --x64"
+  },
+  "devDependencies": {
+    "electron": "36.9.5",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.jhcwcolin.sunrise",
+    "productName": "旭日东升",
+    "copyright": "Copyright © 2026 JHCWColin",
+    "asar": true,
+    "compression": "normal",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!**/*.map",
+      "!**/.DS_Store"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/scripts",
+        "to": "scripts"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "SunriseLauncher-${version}-${arch}.${ext}",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "旭日东升",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
+    },
+    "portable": {
+      "artifactName": "SunriseLauncher-${version}-portable.${ext}"
+    }
+  }
+}

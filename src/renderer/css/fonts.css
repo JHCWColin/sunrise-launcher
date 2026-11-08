@@ -1,0 +1,22 @@
+/* 平方简体（PingFang SC）本地字体，来自 D:\PingFang-main.zip */
+@font-face {
+  font-family: 'PingFang SC';
+  src: url('../assets/fonts/PingFangSC-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PingFang SC';
+  src: url('../assets/fonts/PingFangSC-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PingFang SC';
+  src: url('../assets/fonts/PingFangSC-Semibold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}

@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark" data-accent="sunrise">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self'; media-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>旭日东升</title>
+  <link rel="stylesheet" href="./css/fonts.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/intro.css">
+  <link rel="stylesheet" href="./css/shell.css">
+  <link rel="stylesheet" href="./css/files.css">
+  <link rel="stylesheet" href="./css/settings.css">
+  <link rel="stylesheet" href="./css/viewer.css">
+</head>
+<body>
+  <div class="wallpaper" id="wallpaper" aria-hidden="true"></div>
+  <div class="wallpaper-veil" aria-hidden="true"></div>
+  <div class="ambient" aria-hidden="true">
+    <span class="ambient-orb orb-a"></span>
+    <span class="ambient-orb orb-b"></span>
+    <span class="ambient-orb orb-c"></span>
+    <span class="ambient-grain"></span>
+  </div>
+
+  <section id="intro" class="intro" aria-label="开场动画">
+    <canvas id="intro-canvas" class="intro-canvas"></canvas>
+    <div class="intro-sun-wrap" aria-hidden="true">
+      <div class="intro-sun-glow"></div>
+      <div class="intro-sun"></div>
+      <div class="intro-sun-core"></div>
+    </div>
+    <div class="intro-horizon" aria-hidden="true"></div>
+    <div class="intro-rays" aria-hidden="true"></div>
+    <div class="intro-content">
+      <h1 class="intro-title" id="intro-title" aria-label="旭日东升">
+        <span style="--i:0">旭</span><span style="--i:1">日</span><span style="--i:2">东</span><span style="--i:3">升</span>
+      </h1>
+      <div class="intro-rule" aria-hidden="true"><i></i></div>
+      <p class="intro-purpose">让每一堂课，一键启程</p>
+      <p class="intro-dev"><b id="intro-dev">溶液不呈电中性</b><span class="intro-x">×</span><span class="intro-ai-name">DeepSeek</span></p>
+    </div>
+    <button class="intro-skip" id="intro-skip" type="button">轻触进入</button>
+    <div class="intro-progress" aria-hidden="true"><i></i></div>
+  </section>
+
+  <main id="shell" class="shell" aria-hidden="true">
+    <section class="home-left" aria-label="时间与日期">
+      <div class="brand-mini">
+        <span class="brand-mark" id="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">旭日东升</span>
+      </div>
+      <div class="clock-block">
+        <p class="greeting" id="greeting">早上好，老师</p>
+        <div class="clock" id="clock">
+          <span id="clock-main">07:28</span><span class="clock-sub" id="clock-sub">:23</span><span class="clock-ampm" id="clock-ampm"></span>
+        </div>
+        <div class="date-line">
+          <span id="date-text">11月8日</span>
+          <span id="weekday-text">星期日</span>
+        </div>
+        <div class="sub-date-line">
+          <span id="year-text">2026年</span>
+          <span class="sub-dot" aria-hidden="true"></span>
+          <span id="lunar-text">农历九月二十</span>
+        </div>
+      </div>
+      <p class="left-note">让每一堂课，一键启程</p>
+    </section>
+
+    <section class="home-right" aria-label="课堂入口">
+      <div class="right-top">
+        <div class="right-status" id="right-status"><span class="status-dot"></span><span id="right-status-text">连接课件库…</span></div>
+      </div>
+      <div class="action-grid" id="dock" aria-label="课堂应用"></div>
+      <div class="right-bottom">
+        <span id="bottom-version">v1.0.0</span>
+        <span class="bottom-sep" aria-hidden="true"></span>
+        <button id="bottom-downloads" class="link-btn" type="button">下载目录</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="recent-sheet" class="recent-sheet is-hidden" aria-hidden="true">
+    <div class="recent-sheet-panel glass-panel">
+      <div class="recent-sheet-head">
+        <div><p class="sheet-eyebrow">RECENT</p><h3>最近课件</h3></div>
+        <button id="recent-sheet-close" class="icon-btn glass-chip" type="button" aria-label="关闭"></button>
+      </div>
+      <div id="recent-sheet-list" class="recent-sheet-list"></div>
+      <div class="recent-sheet-foot">
+        <button id="recent-sheet-folder" class="ghost-btn" type="button">打开下载文件夹</button>
+      </div>
+    </div>
+  </div>
+
+  <section id="files-page" class="files-page" aria-hidden="true">
+    <header class="files-topbar glass-panel">
+      <div class="files-topbar-left">
+        <button id="files-back" class="icon-btn glass-chip" type="button" aria-label="返回桌面"></button>
+        <div class="files-title">
+          <b>FTP 课件中心</b>
+          <small id="files-subtitle">校园 NAS · 高三语文</small>
+        </div>
+      </div>
+      <div class="files-topbar-right">
+        <div class="server-pill" id="files-server-pill"><span class="status-dot"></span><span>连接中…</span></div>
+        <button id="files-refresh" class="icon-btn glass-chip" type="button" aria-label="刷新"></button>
+        <button id="files-settings" class="icon-btn glass-chip" type="button" aria-label="设置"></button>
+      </div>
+    </header>
+
+    <div class="files-layout">
+      <aside class="files-sidebar glass-panel">
+        <div class="side-section">
+          <p class="side-label">快捷位置</p>
+          <div id="quick-locations" class="quick-list"></div>
+        </div>
+        <div class="side-section side-recent">
+          <p class="side-label">最近下载</p>
+          <div id="side-recent" class="side-recent-list"></div>
+        </div>
+        <div class="side-footer">
+          <button id="side-open-downloads" class="side-action" type="button">打开下载文件夹</button>
+          <p class="side-note">单击文件即开始下载<br>下载完成后自动打开</p>
+        </div>
+      </aside>
+
+      <section class="files-main glass-panel">
+        <div class="files-toolbar">
+          <div class="toolbar-left">
+            <button id="files-up" class="icon-btn small" type="button" aria-label="上一级"></button>
+            <nav id="breadcrumb" class="breadcrumb" aria-label="当前路径"></nav>
+          </div>
+          <div class="toolbar-right">
+            <label class="search-box">
+              <span class="search-icon" id="search-icon" aria-hidden="true"></span>
+              <input id="files-search" type="search" placeholder="搜索当前文件夹" autocomplete="off" spellcheck="false">
+              <button id="search-clear" class="search-clear" type="button" aria-label="清除搜索">×</button>
+            </label>
+          </div>
+        </div>
+        <div class="files-list-head" aria-hidden="true">
+          <span>名称</span><span>大小</span><span>修改时间</span><span></span>
+        </div>
+        <div id="files-list" class="files-list" role="list"></div>
+        <div id="files-loading" class="files-state is-hidden">
+          <div class="skeleton-list">
+            <div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div>
+            <div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div>
+          </div>
+          <p>正在读取课件库…</p>
+        </div>
+        <div id="files-empty" class="files-state is-hidden">
+          <div class="state-icon" id="empty-icon"></div>
+          <h3>这个文件夹还没有课件</h3>
+          <p>可以点左侧快捷位置，或返回上一级看看。</p>
+        </div>
+        <div id="files-error" class="files-state is-hidden">
+          <div class="state-icon error" id="error-icon"></div>
+          <h3>暂时无法读取课件库</h3>
+          <p id="files-error-text">请检查网络或 NAS 设置。</p>
+          <div class="state-actions">
+            <button id="files-retry" class="primary-btn" type="button">重新连接</button>
+            <button id="files-error-settings" class="ghost-btn" type="button">检查设置</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <aside id="settings-drawer" class="settings-drawer" aria-hidden="true" aria-label="设置">
+    <div class="settings-head">
+      <div>
+        <p class="settings-eyebrow">PREFERENCES</p>
+        <h2>设置</h2>
+      </div>
+      <button id="settings-close" class="icon-btn glass-chip" type="button" aria-label="关闭设置"></button>
+    </div>
+
+    <div class="settings-scroll" id="settings-scroll">
+      <section class="settings-section">
+        <h3>外观</h3>
+        <div class="setting-row">
+          <div class="setting-label"><b>主题</b><span>深色适合教室暗光环境</span></div>
+          <div class="segmented" id="theme-segmented">
+            <button type="button" data-theme-value="dark">深色</button>
+            <button type="button" data-theme-value="light">浅色</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>强调色</b><span>影响图标光晕与高亮</span></div>
+          <div class="swatches" id="accent-swatches">
+            <button type="button" data-accent-value="sunrise" class="swatch sunrise" aria-label="日出金"></button>
+            <button type="button" data-accent-value="ocean" class="swatch ocean" aria-label="海水蓝"></button>
+            <button type="button" data-accent-value="violet" class="swatch violet" aria-label="暮光紫"></button>
+            <button type="button" data-accent-value="emerald" class="swatch emerald" aria-label="松石绿"></button>
+          </div>
+        </div>
+        <div class="setting-row column">
+          <div class="setting-label"><b>液态玻璃强度</b><span id="glass-value">100%</span></div>
+          <input type="range" id="glass-range" min="35" max="160" step="5" value="100">
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>降低动效</b><span>低配设备建议开启</span></div>
+          <label class="switch"><input type="checkbox" id="reduce-motion"><i></i></label>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>时钟</h3>
+        <div class="setting-row">
+          <div class="setting-label"><b>24 小时制</b><span>关闭后显示上午 / 下午</span></div>
+          <label class="switch"><input type="checkbox" id="clock-24h"><i></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>显示秒数</b><span>让时间更有节奏感</span></div>
+          <label class="switch"><input type="checkbox" id="clock-seconds"><i></i></label>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>课件服务器</h3>
+        <div class="nas-status-card" id="settings-nas-status">
+          <span class="status-dot"></span>
+          <div><b>尚未连接</b><span>打开课件库时会自动连接</span></div>
+        </div>
+        <div class="field-grid">
+          <label class="field"><span>NAS 地址</span><input id="nas-host" type="text" spellcheck="false" autocomplete="off"></label>
+          <label class="field field-small"><span>端口</span><input id="nas-port" type="number" min="1" max="65535"></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>HTTPS 加密</b><span>推荐使用 5001 端口</span></div>
+          <label class="switch"><input type="checkbox" id="nas-https"><i></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>允许自签名证书</b><span>群晖默认证书需要开启</span></div>
+          <label class="switch"><input type="checkbox" id="nas-self-signed"><i></i></label>
+        </div>
+        <label class="field"><span>默认进入目录</span><input id="nas-default-path" type="text" spellcheck="false" autocomplete="off"></label>
+        <div class="setting-row compact">
+          <div class="setting-label"><b>教师账号</b><span>已内置，无需手动输入</span></div>
+          <span class="mini-badge">袁忠珂</span>
+        </div>
+        <button id="nas-test" class="primary-btn wide" type="button">测试连接</button>
+        <p class="field-note">下载优先走 FileStation；若接口不可用，会自动回退到 SMB 共享盘。</p>
+      </section>
+
+      <section class="settings-section">
+        <h3>下载与打开</h3>
+        <div class="folder-card">
+          <div class="folder-card-text"><span>下载文件夹</span><b id="downloads-path">—</b></div>
+          <div class="folder-card-actions">
+            <button id="downloads-open" class="ghost-btn small" type="button">打开</button>
+            <button id="downloads-change" class="ghost-btn small" type="button">更改</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>自动打开下载文件</b><span>下载完成后按类型调用 VLC / WPS</span></div>
+          <label class="switch"><input type="checkbox" id="auto-open"><i></i></label>
+        </div>
+        <div class="type-grid" id="auto-open-types"></div>
+        <label class="field">
+          <span>视频播放器</span>
+          <select id="video-player">
+            <option value="auto">自动（优先 VLC）</option>
+            <option value="vlc">VLC</option>
+            <option value="potplayer">PotPlayer</option>
+            <option value="system">Windows 默认播放器</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="settings-section">
+        <h3>系统</h3>
+        <div class="setting-row">
+          <div class="setting-label"><b>开机自动启动</b><span>登录 Windows 后自动进入旭日东升</span></div>
+          <label class="switch"><input type="checkbox" id="auto-start"><i></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>防止屏幕休眠</b><span>上课期间保持屏幕常亮</span></div>
+          <label class="switch"><input type="checkbox" id="prevent-sleep"><i></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>跳过开场动画</b><span>下次启动直接进入桌面</span></div>
+          <label class="switch"><input type="checkbox" id="skip-intro"><i></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>显示最近课件</b><span>在桌面底部展示最近下载</span></div>
+          <label class="switch"><input type="checkbox" id="show-recent"><i></i></label>
+        </div>
+        <div class="setting-row compact">
+          <div class="setting-label"><b>全屏与任务栏</b><span>已强制全屏并隐藏 Windows 任务栏</span></div>
+          <span class="mini-badge ok">已启用</span>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>关于</h3>
+        <div class="about-card">
+          <span class="about-mark" id="about-mark" aria-hidden="true"></span>
+          <div class="about-text">
+            <b>旭日东升</b>
+            <span id="about-version">v1.0.0</span>
+            <span>为希沃教学一体机打造 · <b id="about-dev">溶液不呈电中性</b></span>
+            <span class="about-ai">AI 协作 · <b>DeepSeek</b></span>
+          </div>
+        </div>
+        <label class="field"><span>开发者署名</span><input id="developer-name" type="text" maxlength="40" autocomplete="off"></label>
+        <div class="about-links">
+          <button id="open-github" class="ghost-btn small" type="button">GitHub 仓库</button>
+          <button id="open-logs" class="ghost-btn small" type="button">打开日志</button>
+          <button id="open-config" class="ghost-btn small" type="button">配置目录</button>
+          <button id="show-diagnostics" class="ghost-btn small" type="button">诊断信息</button>
+        </div>
+        <button id="reset-config" class="ghost-btn danger-text wide" type="button">恢复默认设置</button>
+      </section>
+
+      <section class="settings-section exit-section">
+        <div class="exit-card">
+          <div>
+            <b>退出旭日东升</b>
+            <span>退出后将恢复 Windows 任务栏并回到桌面。软件无法通过其他方式关闭。</span>
+          </div>
+          <button id="quit-app" class="danger-btn" type="button">退出软件</button>
+        </div>
+      </section>
+
+      <p class="settings-foot">旭日东升 · Sunrise Launcher v<span id="foot-version">1.0.0</span><br>为每一位老师，把课堂变得更简单。</p>
+    </div>
+  </aside>
+
+  <div id="scrim" class="scrim" aria-hidden="true"></div>
+  <div id="modal-layer" class="modal-layer is-hidden"></div>
+  <div id="toast-layer" class="toast-layer" aria-live="polite" aria-atomic="false"></div>
+  <div id="download-tray" class="download-tray is-hidden" aria-live="polite"></div>
+
+  <div id="image-viewer" class="image-viewer is-hidden" aria-label="图片预览">
+    <div class="viewer-top glass-panel">
+      <div class="viewer-title"><b id="viewer-name">图片</b><span id="viewer-meta"></span></div>
+      <div class="viewer-actions">
+        <button id="viewer-reveal" class="icon-btn glass-chip" type="button" aria-label="在文件夹中显示"></button>
+        <button id="viewer-close" class="icon-btn glass-chip" type="button" aria-label="关闭预览"></button>
+      </div>
+    </div>
+    <div class="viewer-stage" id="viewer-stage">
+      <div class="viewer-loading" id="viewer-loading"><span class="spinner"></span>正在载入图片…</div>
+      <img id="viewer-img" alt="" draggable="false">
+      <div class="viewer-error is-hidden" id="viewer-error">
+        <h3>无法预览这张图片</h3>
+        <p id="viewer-error-text">可以尝试在文件夹中打开。</p>
+      </div>
+    </div>
+    <div class="viewer-foot">双击放大 · 滚轮缩放 · 拖动查看</div>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

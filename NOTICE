@@ -1,0 +1,25 @@
+# NOTICE
+
+「旭日东升 / Sunrise Launcher」的源代码以 MIT License 发布，但以下资源不包含在 MIT 授权范围内：
+
+## 字体
+
+`src/renderer/assets/fonts/PingFangSC-*.otf` 来自老师提供的 `D:\PingFang-main.zip`。
+PingFang SC（平方简体）版权归 Apple Inc. 所有。本项目仅在班级教学一体机上本地使用，
+不随 MIT 许可证再授权，也不得单独提取、分发或用于商业用途。
+
+## 壁纸
+
+`src/renderer/assets/wallpaper/golden-gate.jpg` 为老师提供的
+`macos-27-golden-gate-wallpaper-dark.jpeg`，版权归原权利人所有。
+仅用于本班级启动器的界面背景，不随 MIT 许可证再授权。
+
+## 应用图标
+
+`build/icon.png`、`build/icon.ico` 由本项目的 `tools/make-icon.py` 生成，
+随源代码以 MIT License 发布。
+
+## 第三方软件
+
+WPS Office、希沃白板 5、希沃视频展台、VLC media player、PotPlayer 等均为各自权利人的
+独立软件。本启动器只负责调用本机已安装的程序，不包含、不修改、不再分发这些软件。

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+out/
+release/
+seewo-launcher-environment-condensed.md
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+tools/mock-downloads/
+docs/tmp/
+*.part
+*.sunrise-part
