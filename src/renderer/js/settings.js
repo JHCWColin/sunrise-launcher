@@ -5,8 +5,9 @@ import {
   confirmDialog, copyText, debounce, escapeHtml, openModal, setIcon, toast,
 } from './ui.js';
 import { mergeConfig, state } from './state.js';
-import { refreshHome, updateThemeIcon } from './home.js';
+import { refreshHome } from './home.js';
 import { setClockConfig } from './clock.js';
+import { setAodClockConfig } from './aod.js';
 
 const TYPE_LABELS = {
   video: '视频',
@@ -40,6 +41,26 @@ const saveBgDim = debounce(async (value) => {
   if (res && res.ok) mergeConfig(res.config);
 }, 260);
 
+const saveBgDimLight = debounce(async (value) => {
+  const res = await api.updateConfig({ bgDimLight: value });
+  if (res && res.ok) mergeConfig(res.config);
+}, 260);
+
+const saveAodTimeout = debounce(async (value) => {
+  const res = await api.updateConfig({ aodTimeoutSec: value });
+  if (res && res.ok) mergeConfig(res.config);
+}, 260);
+
+// v1.9.0：熄屏等待时长的友好文案（30 秒 ~ 15 分钟）
+function formatAodTimeout(seconds) {
+  const s = Math.max(30, Math.round(Number(seconds) || 60));
+  if (s < 60) return `${s} 秒`;
+  const m = Math.floor(s / 60);
+  const rest = s % 60;
+  if (m < 60) return rest ? `${m} 分 ${rest} 秒` : `${m} 分钟`;
+  return `${Math.floor(m / 60)} 小时 ${m % 60} 分`;
+}
+
 function fileNameOf(filePath) {
   const parts = String(filePath || '').split(/[\\/]/);
   return parts[parts.length - 1] || '';
@@ -64,9 +85,18 @@ function cacheDom() {
   dom.glowValue = $('#glow-value');
   dom.bgDimRange = $('#bg-dim-range');
   dom.bgDimValue = $('#bg-dim-value');
-  dom.backgroundName = $('#background-name');
-  dom.backgroundChange = $('#background-change');
-  dom.backgroundReset = $('#background-reset');
+  dom.bgDimLightRange = $('#bg-dim-light-range');
+  dom.bgDimLightValue = $('#bg-dim-light-value');
+  dom.backgroundDarkName = $('#background-dark-name');
+  dom.backgroundDarkChange = $('#background-dark-change');
+  dom.backgroundDarkReset = $('#background-dark-reset');
+  dom.backgroundLightName = $('#background-light-name');
+  dom.backgroundLightChange = $('#background-light-change');
+  dom.backgroundLightReset = $('#background-light-reset');
+  dom.aodEnabled = $('#aod-enabled');
+  dom.aodTimeoutRow = $('#aod-timeout-row');
+  dom.aodTimeoutRange = $('#aod-timeout-range');
+  dom.aodTimeoutValue = $('#aod-timeout-value');
   dom.reduceMotion = $('#reduce-motion');
   dom.clock24h = $('#clock-24h');
   dom.clockSeconds = $('#clock-seconds');
@@ -157,12 +187,41 @@ function syncBgDim() {
   if (dom.bgDimValue) dom.bgDimValue.textContent = `${percent}%`;
 }
 
-function syncBackground() {
-  if (!dom.backgroundName) return;
-  const filePath = state.config ? state.config.background : '';
-  dom.backgroundName.textContent = filePath ? fileNameOf(filePath) : '默认壁纸';
-  dom.backgroundName.title = filePath || '内置 Golden Gate 壁纸';
-  if (dom.backgroundReset) dom.backgroundReset.disabled = !filePath;
+function syncBgDimLight() {
+  const raw = state.config ? Number(state.config.bgDimLight) : 0.8;
+  const value = Number.isFinite(raw) ? raw : 0.8;
+  const percent = Math.round(value * 100);
+  if (dom.bgDimLightRange) {
+    dom.bgDimLightRange.value = String(percent);
+    paintRange(dom.bgDimLightRange, percent, 0, 90);
+  }
+  if (dom.bgDimLightValue) dom.bgDimLightValue.textContent = `${percent}%`;
+}
+
+function syncBackgroundCard(nameEl, resetEl, filePath) {
+  if (!nameEl) return;
+  nameEl.textContent = filePath ? fileNameOf(filePath) : '默认壁纸';
+  nameEl.title = filePath || '内置 Golden Gate 壁纸';
+  if (resetEl) resetEl.disabled = !filePath;
+}
+
+function syncBackgrounds() {
+  const config = state.config || {};
+  syncBackgroundCard(dom.backgroundDarkName, dom.backgroundDarkReset, config.backgroundDark || '');
+  syncBackgroundCard(dom.backgroundLightName, dom.backgroundLightReset, config.backgroundLight || '');
+}
+
+function syncAod() {
+  const config = state.config || {};
+  const enabled = Boolean(config.aodEnabled);
+  if (dom.aodEnabled) dom.aodEnabled.checked = enabled;
+  const seconds = Math.round(Number(config.aodTimeoutSec) || 60);
+  if (dom.aodTimeoutRange) {
+    dom.aodTimeoutRange.value = String(seconds);
+    paintRange(dom.aodTimeoutRange, seconds, 30, 900);
+  }
+  if (dom.aodTimeoutValue) dom.aodTimeoutValue.textContent = formatAodTimeout(seconds);
+  if (dom.aodTimeoutRow) dom.aodTimeoutRow.classList.toggle('is-disabled', !enabled);
 }
 
 function syncNasStatus(status = state.nasStatus) {
@@ -192,7 +251,9 @@ function syncAll() {
   syncGlass();
   syncGlow();
   syncBgDim();
-  syncBackground();
+  syncBgDimLight();
+  syncBackgrounds();
+  syncAod();
   if (dom.reduceMotion) dom.reduceMotion.checked = Boolean(config.reduceMotion);
   if (dom.clock24h) dom.clock24h.checked = config.clock24h !== false;
   if (dom.clockSeconds) dom.clockSeconds.checked = Boolean(config.showSeconds);
@@ -213,7 +274,7 @@ function syncAll() {
   if (dom.preventSleep) dom.preventSleep.checked = config.preventSleep !== false;
   if (dom.skipIntro) dom.skipIntro.checked = Boolean(config.skipIntro);
   if (dom.showRecent) dom.showRecent.checked = config.showRecent !== false;
-  const version = state.app ? state.app.version : '1.1.0';
+  const version = state.app ? state.app.version : '1.5.0';
   if (dom.aboutVersion) dom.aboutVersion.textContent = `v${version}`;
   if (dom.versionFoot) dom.versionFoot.textContent = version;
   syncNasStatus();
@@ -231,7 +292,6 @@ async function savePatch(patch) {
     mergeConfig(res.config);
     if (res.apps) state.apps = res.apps;
     refreshHome();
-    updateThemeIcon();
     return res.config;
   } catch (err) {
     toast({ type: 'error', message: `设置保存失败：${err.message}` });
@@ -320,8 +380,9 @@ function bind() {
       if (state.config && state.config.theme === theme) return;
       if (state.config) state.config.theme = theme;
       applyTheme(theme);
+      // v1.9.0：深浅两套壁纸各自独立，切换主题后立即换用对应壁纸。
+      applyBackground(state.config, theme);
       syncThemeSegmented();
-      updateThemeIcon();
       await savePatch({ theme });
     });
   }
@@ -371,33 +432,73 @@ function bind() {
     });
   }
 
-  if (dom.backgroundChange) {
-    dom.backgroundChange.addEventListener('click', async () => {
-      const result = await api.chooseBackground();
-      if (!result || result.canceled) return;
-      if (!result.ok) {
-        toast({ type: 'error', message: result.message || '无法设置背景图片' });
-        return;
-      }
-      mergeConfig(result.config);
-      applyBackground(result.config.background);
-      syncBackground();
-      toast({ type: 'success', message: '背景图片已更新。', duration: 2800 });
+  if (dom.bgDimLightRange) {
+    dom.bgDimLightRange.addEventListener('input', () => {
+      const percent = Number(dom.bgDimLightRange.value) || 0;
+      if (dom.bgDimLightValue) dom.bgDimLightValue.textContent = `${percent}%`;
+      paintRange(dom.bgDimLightRange, percent, 0, 90);
+      if (state.config) state.config.bgDimLight = percent / 100;
+      applyBgDim(state.config);
+      saveBgDimLight(percent / 100);
     });
   }
 
-  if (dom.backgroundReset) {
-    dom.backgroundReset.addEventListener('click', async () => {
-      if (!state.config || !state.config.background) return;
-      const result = await api.updateConfig({ background: '' });
-      if (!result || !result.ok) {
-        toast({ type: 'error', message: (result && result.message) || '无法恢复默认背景' });
-        return;
-      }
-      mergeConfig(result.config);
-      applyBackground('');
-      syncBackground();
-      toast({ type: 'success', message: '已恢复默认壁纸。', duration: 2600 });
+  // v1.9.0：深色 / 亮色模式各自独立的壁纸更换。
+  const bindBackgroundCard = (theme, changeBtn, resetBtn) => {
+    if (changeBtn) {
+      changeBtn.addEventListener('click', async () => {
+        const result = await api.chooseBackground(theme);
+        if (!result || result.canceled) return;
+        if (!result.ok) {
+          toast({ type: 'error', message: result.message || '无法设置背景图片' });
+          return;
+        }
+        mergeConfig(result.config);
+        // 只有当前正处在对应主题时才需要立刻换壁纸。
+        if (state.config && state.config.theme === theme) applyBackground(result.config, theme);
+        syncBackgrounds();
+        toast({ type: 'success', message: theme === 'light' ? '浅色模式壁纸已更新。' : '深色模式壁纸已更新。', duration: 2800 });
+      });
+    }
+    if (resetBtn) {
+      resetBtn.addEventListener('click', async () => {
+        const key = theme === 'light' ? 'backgroundLight' : 'backgroundDark';
+        if (!state.config || !state.config[key]) return;
+        const result = await api.updateConfig({ [key]: '' });
+        if (!result || !result.ok) {
+          toast({ type: 'error', message: (result && result.message) || '无法恢复默认背景' });
+          return;
+        }
+        mergeConfig(result.config);
+        if (state.config && state.config.theme === theme) applyBackground(result.config, theme);
+        syncBackgrounds();
+        toast({ type: 'success', message: '已恢复默认壁纸。', duration: 2600 });
+      });
+    }
+  };
+  bindBackgroundCard('dark', dom.backgroundDarkChange, dom.backgroundDarkReset);
+  bindBackgroundCard('light', dom.backgroundLightChange, dom.backgroundLightReset);
+
+  if (dom.aodEnabled) {
+    dom.aodEnabled.addEventListener('change', async () => {
+      const value = dom.aodEnabled.checked;
+      if (state.config) state.config.aodEnabled = value;
+      syncAod();
+      await savePatch({ aodEnabled: value });
+      toast({
+        type: 'success',
+        message: value ? '已开启自动熄屏常显。' : '已关闭自动熄屏常显。',
+        duration: 2600,
+      });
+    });
+  }
+  if (dom.aodTimeoutRange) {
+    dom.aodTimeoutRange.addEventListener('input', () => {
+      const seconds = Math.max(30, Number(dom.aodTimeoutRange.value) || 60);
+      if (dom.aodTimeoutValue) dom.aodTimeoutValue.textContent = formatAodTimeout(seconds);
+      paintRange(dom.aodTimeoutRange, seconds, 30, 900);
+      if (state.config) state.config.aodTimeoutSec = seconds;
+      saveAodTimeout(seconds);
     });
   }
 
@@ -415,6 +516,7 @@ function bind() {
       const value = dom.clock24h.checked;
       if (state.config) state.config.clock24h = value;
       setClockConfig({ clock24h: value, showSeconds: state.config.showSeconds });
+      setAodClockConfig({ clock24h: value });
       await savePatch({ clock24h: value });
     });
   }
@@ -594,13 +696,13 @@ function bind() {
         applyAccent(result.config.accent);
         applyGlass(result.config.glass);
         applyGlow(result.config.glow);
-        applyBgDim(result.config.bgDim);
-        applyBackground(result.config.background);
+        applyBgDim(result.config);
+        applyBackground(result.config);
         applyMotion(result.config.reduceMotion);
         setClockConfig(result.config);
+        setAodClockConfig(result.config);
         syncAll();
         refreshHome();
-        updateThemeIcon();
         toast({ type: 'success', message: '已恢复默认设置。', duration: 2800 });
       } else {
         toast({ type: 'error', message: (result && result.message) || '恢复默认设置失败' });
@@ -632,8 +734,8 @@ export function initSettings(options = {}) {
   bind();
   if (dom.close) setIcon(dom.close, 'close');
   if (dom.aboutMark) dom.aboutMark.innerHTML = ICON.sun;
-  if (dom.aboutVersion) dom.aboutVersion.textContent = `v${state.app ? state.app.version : '1.1.0'}`;
-  if (dom.versionFoot) dom.versionFoot.textContent = state.app ? state.app.version : '1.1.0';
+  if (dom.aboutVersion) dom.aboutVersion.textContent = `v${state.app ? state.app.version : '1.5.0'}`;
+  if (dom.versionFoot) dom.versionFoot.textContent = state.app ? state.app.version : '1.5.0';
   api.onNasStatus((status) => {
     state.nasStatus = status;
     syncNasStatus(status);
@@ -664,15 +766,6 @@ export function closeSettings() {
 
 export function isSettingsOpen() {
   return open;
-}
-
-export async function setThemeAndSave(theme) {
-  if (!state.config) return;
-  state.config.theme = theme;
-  applyTheme(theme);
-  syncThemeSegmented();
-  updateThemeIcon();
-  await savePatch({ theme });
 }
 
 export function refreshSettings() {

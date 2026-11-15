@@ -11,6 +11,8 @@ const apps = require('./apps');
 const { NasClient } = require('./nas');
 const { DownloadManager, DownloadsWatcher, cleanupOldParts } = require('./downloads');
 const { registerIpc } = require('./ipc');
+const { createAodController } = require('./aod');
+const usb = require('./usb');
 
 const RENDERER_ROOT = path.join(__dirname, '..', 'renderer');
 const DEV_WINDOW = process.env.SUNRISE_DEV_WINDOW === '1';
@@ -47,6 +49,7 @@ let downloader = null;
 let watcher = null;
 let quitting = false;
 let powerBlocker = -1;
+let aod = null;
 let nasStatus = { connected: false, state: 'idle', message: '尚未连接', checkedAt: 0, latency: 0 };
 let statusTimer = null;
 const openedRecently = new Map();
@@ -167,8 +170,11 @@ function registerAppProtocol() {
       rel = rel.replace(/^\/+/, '');
 
       // 自定义背景图：只允许读取用户数据目录内的文件。
+      // v1.9.0：暗色 / 亮色模式各自拥有独立壁纸，?theme=dark|light 指定取哪一套。
       if (rel === '__wallpaper__') {
-        const target = store.get().background;
+        const config = store.get();
+        const theme = url.searchParams.get('theme') === 'light' ? 'light' : 'dark';
+        const target = theme === 'light' ? config.backgroundLight : config.backgroundDark;
         if (!target || !pathInside(app.getPath('userData'), target)) {
           return new Response('Not found', { status: 404 });
         }
@@ -429,6 +435,8 @@ async function requestQuit() {
   if (watcher) watcher.stop();
   if (downloader) downloader.cancelAll();
   if (statusTimer) clearInterval(statusTimer);
+  if (aod) aod.stop();
+  usb.stopMonitor();
   try { globalShortcut.unregisterAll(); } catch (_) { /* ignore */ }
   try { await taskbar.restore(); } catch (err) { log.warn('恢复任务栏失败:', err.message); }
   if (powerBlocker >= 0) {
@@ -474,7 +482,14 @@ function initServices() {
     requestQuit,
     applyConfigEffects,
     restartWatcher,
+    wakeAod: () => { if (aod) aod.wake(); },
   });
+
+  // v1.9.0：自动熄屏常显。控制器每秒直接读 store，设置变更无需额外通知。
+  aod = createAodController({ send });
+  aod.start(store.get);
+
+  usb.startMonitor(send);
 }
 
 function startStatusLoop() {

@@ -10,20 +10,15 @@
   <link rel="stylesheet" href="./css/intro.css">
   <link rel="stylesheet" href="./css/shell.css">
   <link rel="stylesheet" href="./css/files.css">
+  <link rel="stylesheet" href="./css/usb.css">
   <link rel="stylesheet" href="./css/settings.css">
   <link rel="stylesheet" href="./css/viewer.css">
+  <link rel="stylesheet" href="./css/aod.css">
 </head>
 <body>
   <div class="wallpaper" id="wallpaper" aria-hidden="true"></div>
   <div class="wallpaper-dim" aria-hidden="true"></div>
   <div class="wallpaper-veil" aria-hidden="true"></div>
-  <div class="ambient" aria-hidden="true">
-    <span class="ambient-orb orb-a"></span>
-    <span class="ambient-orb orb-b"></span>
-    <span class="ambient-orb orb-c"></span>
-    <span class="ambient-grain"></span>
-  </div>
-
   <section id="intro" class="intro" aria-label="开场动画">
     <canvas id="intro-canvas" class="intro-canvas"></canvas>
     <div class="intro-sun-wrap" aria-hidden="true">
@@ -165,6 +160,140 @@
     </div>
   </section>
 
+  <section id="usb-page" class="usb-page" aria-hidden="true">
+    <header class="files-topbar glass-panel usb-topbar">
+      <div class="files-topbar-left">
+        <button id="usb-back" class="icon-btn glass-chip" type="button" aria-label="返回桌面"></button>
+        <div class="files-title">
+          <b>移动存储设备</b>
+          <small id="usb-subtitle">本机课件 ⇄ U 盘 · 拷入本机默认存到桌面</small>
+        </div>
+      </div>
+      <div class="files-topbar-right">
+        <button id="usb-device-pill" class="server-pill usb-drive-pill" type="button" title="切换 U 盘">
+          <span class="status-dot"></span><span id="usb-device-text">未插入 U 盘</span>
+        </button>
+        <button id="usb-refresh" class="icon-btn glass-chip" type="button" aria-label="刷新"></button>
+      </div>
+    </header>
+
+    <div class="usb-layout">
+      <section class="usb-pane glass-panel" data-side="local">
+        <div class="usb-pane-head">
+          <div class="usb-pane-title">
+            <span class="usb-pane-eyebrow">本机</span>
+            <b id="usb-local-title">本机课件</b>
+          </div>
+          <div class="segmented usb-roots" id="usb-local-roots">
+            <button type="button" data-root="downloads">下载文件夹</button>
+            <button type="button" data-root="desktop">桌面</button>
+          </div>
+        </div>
+        <div class="files-toolbar usb-toolbar">
+          <div class="toolbar-left">
+            <button id="usb-local-up" class="icon-btn small" type="button" aria-label="上一级"></button>
+            <nav id="usb-local-crumbs" class="breadcrumb" aria-label="本机路径"></nav>
+          </div>
+          <label class="search-box usb-search">
+            <span class="search-icon" id="usb-local-search-icon" aria-hidden="true"></span>
+            <input id="usb-local-search" type="search" placeholder="搜索当前文件夹" autocomplete="off" spellcheck="false">
+            <button class="search-clear" id="usb-local-search-clear" type="button" aria-label="清除搜索">×</button>
+          </label>
+        </div>
+        <div class="files-list-head usb-list-head" aria-hidden="true">
+          <span></span><span>名称</span><span>大小</span><span>修改时间</span><span></span>
+        </div>
+        <div id="usb-local-list" class="files-list usb-list" role="list"></div>
+        <div id="usb-local-loading" class="files-state is-hidden">
+          <div class="skeleton-list">
+            <div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div>
+          </div>
+          <p>正在读取本机课件…</p>
+        </div>
+        <div id="usb-local-empty" class="files-state is-hidden">
+          <div class="state-icon" id="usb-local-empty-icon"></div>
+          <h3>这里还没有课件</h3>
+          <p>下载文件夹和桌面会显示 PPT、Word、Excel、希沃课件、图片、视频等资源，子文件夹点进去即可查看。</p>
+        </div>
+        <div class="usb-pane-foot">
+          <div class="usb-select-info" id="usb-local-info">未选择文件</div>
+          <div class="usb-foot-actions">
+            <button id="usb-local-all" class="ghost-btn small" type="button">全选</button>
+            <button id="usb-local-clear" class="ghost-btn small" type="button">清除</button>
+            <button id="usb-copy-to-usb" class="primary-btn usb-copy-btn" type="button">拷贝到 U 盘 →</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="usb-pane glass-panel" data-side="usb">
+        <div class="usb-pane-head">
+          <div class="usb-pane-title">
+            <span class="usb-pane-eyebrow">U 盘</span>
+            <b id="usb-usb-title">未插入 U 盘</b>
+          </div>
+          <div class="usb-free" id="usb-free">—</div>
+        </div>
+        <div class="files-toolbar usb-toolbar">
+          <div class="toolbar-left">
+            <button id="usb-usb-up" class="icon-btn small" type="button" aria-label="上一级"></button>
+            <nav id="usb-usb-crumbs" class="breadcrumb" aria-label="U 盘路径"></nav>
+          </div>
+          <label class="search-box usb-search">
+            <span class="search-icon" id="usb-usb-search-icon" aria-hidden="true"></span>
+            <input id="usb-usb-search" type="search" placeholder="搜索当前文件夹" autocomplete="off" spellcheck="false">
+            <button class="search-clear" id="usb-usb-search-clear" type="button" aria-label="清除搜索">×</button>
+          </label>
+        </div>
+        <div class="files-list-head usb-list-head" aria-hidden="true">
+          <span></span><span>名称</span><span>大小</span><span>修改时间</span><span></span>
+        </div>
+        <div id="usb-usb-list" class="files-list usb-list" role="list"></div>
+        <div id="usb-usb-loading" class="files-state is-hidden">
+          <div class="skeleton-list">
+            <div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div>
+          </div>
+          <p>正在读取 U 盘…</p>
+        </div>
+        <div id="usb-usb-empty" class="files-state is-hidden">
+          <div class="state-icon" id="usb-usb-empty-icon"></div>
+          <h3>U 盘是空的</h3>
+          <p>从左侧勾选课件，点「拷贝到 U 盘」就可以了。</p>
+        </div>
+        <div id="usb-usb-missing" class="files-state is-hidden">
+          <div class="state-icon error" id="usb-usb-missing-icon"></div>
+          <h3>未检测到 U 盘</h3>
+          <p>把 U 盘插入一体机的 USB 接口，几秒后会自动识别。</p>
+        </div>
+        <div class="usb-pane-foot">
+          <div class="usb-select-info" id="usb-usb-info">未选择文件</div>
+          <div class="usb-foot-actions">
+            <button id="usb-usb-all" class="ghost-btn small" type="button">全选</button>
+            <button id="usb-usb-clear" class="ghost-btn small" type="button">清除</button>
+            <button id="usb-copy-to-local" class="primary-btn usb-copy-btn" type="button">← 拷贝到桌面</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="usb-progress" class="usb-progress is-hidden" aria-live="polite">
+      <div class="usb-progress-panel glass-panel">
+        <div class="usb-progress-top">
+          <span class="spinner"></span>
+          <div class="usb-progress-text">
+            <b id="usb-progress-name">正在拷贝…</b>
+            <span id="usb-progress-meta">0 / 0</span>
+          </div>
+          <button id="usb-progress-cancel" class="ghost-btn small" type="button">取消</button>
+        </div>
+        <div class="usb-progress-bar"><i id="usb-progress-fill"></i></div>
+        <div class="usb-progress-sub">
+          <span id="usb-progress-percent">0%</span>
+          <span id="usb-progress-detail">— / —</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <aside id="settings-drawer" class="settings-drawer" aria-hidden="true" aria-label="设置">
     <div class="settings-head">
       <div>
@@ -185,16 +314,20 @@
           </div>
         </div>
         <div class="setting-row">
-          <div class="setting-label"><b>强调色</b><span>影响图标光晕与高亮</span></div>
+          <div class="setting-label"><b>强调色</b><span>全局基调 · 文字、玻璃面板与壁纸色调</span></div>
           <div class="swatches" id="accent-swatches">
             <button type="button" data-accent-value="sunrise" class="swatch sunrise" aria-label="日出金"></button>
             <button type="button" data-accent-value="ocean" class="swatch ocean" aria-label="海水蓝"></button>
             <button type="button" data-accent-value="violet" class="swatch violet" aria-label="暮光紫"></button>
             <button type="button" data-accent-value="emerald" class="swatch emerald" aria-label="松石绿"></button>
+            <button type="button" data-accent-value="sakura" class="swatch sakura" aria-label="樱花粉"></button>
+            <button type="button" data-accent-value="amber" class="swatch amber" aria-label="琥珀金"></button>
+            <button type="button" data-accent-value="glacier" class="swatch glacier" aria-label="冰川青"></button>
+            <button type="button" data-accent-value="dusk" class="swatch dusk" aria-label="暮夜蓝"></button>
           </div>
         </div>
         <div class="setting-row column">
-          <div class="setting-label"><b>液态玻璃强度</b><span id="glass-value">100%</span></div>
+          <div class="setting-label"><b>半透明强度</b><span id="glass-value">100%</span></div>
           <input type="range" id="glass-range" min="35" max="160" step="5" value="100">
         </div>
         <div class="setting-row column">
@@ -202,16 +335,28 @@
           <input type="range" id="glow-range" min="0" max="150" step="5" value="30">
         </div>
         <div class="folder-card">
-          <div class="folder-card-text"><span>背景图片</span><b id="background-name" class="bg-file-name">默认壁纸</b></div>
+          <div class="folder-card-text"><span>深色模式壁纸</span><b id="background-dark-name" class="bg-file-name">默认壁纸</b></div>
           <div class="folder-card-actions">
-            <button id="background-change" class="ghost-btn small" type="button">更换</button>
-            <button id="background-reset" class="ghost-btn small" type="button">默认</button>
+            <button id="background-dark-change" class="ghost-btn small" type="button">更换</button>
+            <button id="background-dark-reset" class="ghost-btn small" type="button">默认</button>
+          </div>
+        </div>
+        <div class="folder-card">
+          <div class="folder-card-text"><span>浅色模式壁纸</span><b id="background-light-name" class="bg-file-name">默认壁纸</b></div>
+          <div class="folder-card-actions">
+            <button id="background-light-change" class="ghost-btn small" type="button">更换</button>
+            <button id="background-light-reset" class="ghost-btn small" type="button">默认</button>
           </div>
         </div>
         <div class="setting-row column">
-          <div class="setting-label"><b>背景遮罩（黑色）</b><span id="bg-dim-value">55%</span></div>
+          <div class="setting-label"><b>背景遮罩 · 黑色（深色模式）</b><span id="bg-dim-value">55%</span></div>
           <input type="range" id="bg-dim-range" min="0" max="90" step="5" value="55">
         </div>
+        <div class="setting-row column">
+          <div class="setting-label"><b>背景遮罩 · 白色（浅色模式）</b><span id="bg-dim-light-value">80%</span></div>
+          <input type="range" id="bg-dim-light-range" min="0" max="90" step="5" value="80">
+        </div>
+        <p class="field-note">两种遮罩调到 0% 时最通透：都能看到无遮罩的原壁纸。</p>
         <div class="setting-row">
           <div class="setting-label"><b>降低动效</b><span>低配设备建议开启</span></div>
           <label class="switch"><input type="checkbox" id="reduce-motion"><i></i></label>
@@ -228,6 +373,19 @@
           <div class="setting-label"><b>显示秒数</b><span>让时间更有节奏感</span></div>
           <label class="switch"><input type="checkbox" id="clock-seconds"><i></i></label>
         </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>熄屏常显</h3>
+        <div class="setting-row">
+          <div class="setting-label"><b>自动熄屏常显</b><span>无操作一段时间后压暗壁纸，只留时间与日期</span></div>
+          <label class="switch"><input type="checkbox" id="aod-enabled"><i></i></label>
+        </div>
+        <div class="setting-row column" id="aod-timeout-row">
+          <div class="setting-label"><b>进入熄屏前等待</b><span id="aod-timeout-value">1 分钟</span></div>
+          <input type="range" id="aod-timeout-range" min="30" max="900" step="15" value="60">
+        </div>
+        <p class="field-note">类 iPhone 熄屏显示：时钟居于屏幕正中，公历与农历日期紧贴其上、行距紧凑，轻点屏幕任意位置即可唤醒。最短可设 30 秒。</p>
       </section>
 
       <section class="settings-section">
@@ -312,7 +470,7 @@
           <span class="about-mark" id="about-mark" aria-hidden="true"></span>
           <div class="about-text">
             <b>旭日东升</b>
-            <span id="about-version">v1.1.0</span>
+            <span id="about-version">v1.5.0</span>
             <span>为希沃教学一体机打造</span>
             <span class="about-credit">由JHCWColin与DeepSeek共同创作。</span>
           </div>
@@ -336,7 +494,7 @@
         </div>
       </section>
 
-      <p class="settings-foot">旭日东升 · Sunrise Launcher v<span id="foot-version">1.1.0</span><br>为每一位老师，把课堂变得更简单。</p>
+      <p class="settings-foot">旭日东升 · Sunrise Launcher v<span id="foot-version">1.5.0</span><br>为每一位老师，把课堂变得更简单。</p>
     </div>
   </aside>
 
@@ -362,6 +520,16 @@
       </div>
     </div>
     <div class="viewer-foot">双击放大 · 滚轮缩放 · 拖动查看</div>
+  </div>
+
+  <!-- v1.9.0 iPhone 风格熄屏常显：主进程监测系统空闲后点亮，轻点任意位置唤醒 -->
+  <div id="aod-layer" class="aod-layer" aria-hidden="true">
+    <div class="aod-content">
+      <p class="aod-date" id="aod-date-line1">2026年11月12日 星期四</p>
+      <p class="aod-date aod-date-lunar" id="aod-date-line2">丙午年十月初四日</p>
+      <div class="aod-clock" id="aod-clock">00:00</div>
+    </div>
+    <p class="aod-hint">轻点任意位置解锁</p>
   </div>
 
   <script type="module" src="./js/main.js"></script>

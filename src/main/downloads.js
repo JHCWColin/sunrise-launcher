@@ -55,6 +55,86 @@ function isIgnoredName(name) {
   return IGNORED_SUFFIXES.some((suffix) => lower.endsWith(suffix));
 }
 
+/* ---------------- v1.8.0 NAS 下载索引（防重复下载） ----------------
+   持久化到 userData/nas-downloads.json：NAS 路径 -> 本地落盘文件。
+   再次点击同一 NAS 文件时命中索引，直接打开本地副本，不再重复下载
+   （也不会再生成「文件名 (2).ext」）。 */
+
+const INDEX_FILE = 'nas-downloads.json';
+const INDEX_MAX_ENTRIES = 400;
+let downloadIndex = null;
+let indexSaveTimer = null;
+
+function indexPath() {
+  return path.join(app.getPath('userData'), INDEX_FILE);
+}
+
+function normalizeNasKey(nasPath) {
+  return String(nasPath || '').replace(/\/+$/, '');
+}
+
+function loadDownloadIndex() {
+  if (downloadIndex) return downloadIndex;
+  try {
+    const text = fs.readFileSync(indexPath(), 'utf8').replace(/^\uFEFF/, '');
+    const raw = JSON.parse(text);
+    downloadIndex = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  } catch (_) {
+    downloadIndex = {};
+  }
+  return downloadIndex;
+}
+
+function saveDownloadIndex() {
+  if (indexSaveTimer) clearTimeout(indexSaveTimer);
+  indexSaveTimer = setTimeout(() => {
+    indexSaveTimer = null;
+    try {
+      const target = indexPath();
+      const tmp = `${target}.tmp`;
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(tmp, JSON.stringify(downloadIndex || {}, null, 2), 'utf8');
+      fs.renameSync(tmp, target);
+    } catch (err) {
+      log.warn('保存下载索引失败:', err.message);
+    }
+  }, 200);
+}
+
+/**
+ * 查找某 NAS 路径此前下载到的本地文件。
+ * 返回 { local, size, name } 或 null（未下载过 / 本地已被删 / NAS 端大小有变化）。
+ */
+function findExistingDownload(nasPath, nasSize) {
+  if (!nasPath) return null;
+  const entry = loadDownloadIndex()[normalizeNasKey(nasPath)];
+  if (!entry || typeof entry.local !== 'string' || !entry.local) return null;
+  let stat;
+  try { stat = fs.statSync(entry.local); } catch (_) { return null; }
+  if (!stat.isFile()) return null;
+  // NAS 端文件大小变了（课件被重新上传）：视为新版本，重新下载。
+  const remoteSize = Number(nasSize) || 0;
+  if (remoteSize && Number(entry.size) && remoteSize !== Number(entry.size)) return null;
+  return { local: entry.local, size: stat.size, name: path.basename(entry.local) };
+}
+
+function recordNasDownload(nasPath, localPath, size) {
+  if (!nasPath || !localPath) return;
+  const index = loadDownloadIndex();
+  index[normalizeNasKey(nasPath)] = {
+    local: localPath,
+    size: Number(size) || 0,
+    name: path.basename(localPath),
+    at: Date.now(),
+  };
+  const keys = Object.keys(index);
+  if (keys.length > INDEX_MAX_ENTRIES) {
+    keys.sort((a, b) => (index[a].at || 0) - (index[b].at || 0));
+    for (const key of keys.slice(0, keys.length - INDEX_MAX_ENTRIES)) delete index[key];
+  }
+  saveDownloadIndex();
+}
+
 function readHead(filePath, length = 64) {
   const fd = fs.openSync(filePath, 'r');
   try {
@@ -438,6 +518,7 @@ class DownloadManager {
       source: 'nas',
     };
     store.addRecent(finalPath, 'nas');
+    recordNasDownload(job.nasPath, finalPath, stat.size);
     log.info('下载完成:', finalPath, `${stat.size} bytes`, method, `${result.elapsed}ms`);
     this.send('recent:updated', store.get().recent);
     this.send('download:complete', result);
@@ -609,6 +690,8 @@ function cleanupOldParts(dir) {
 module.exports = {
   DownloadManager,
   DownloadsWatcher,
+  findExistingDownload,
+  recordNasDownload,
   validateDownloadedFile,
   sanitizeFileName,
   uniqueDestination,

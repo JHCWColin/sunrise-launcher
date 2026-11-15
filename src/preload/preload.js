@@ -18,8 +18,9 @@ contextBridge.exposeInMainWorld('sunrise', {
   getState: () => ipcRenderer.invoke('app:get-state'),
   updateConfig: (patch) => ipcRenderer.invoke('config:update', patch),
   resetConfig: () => ipcRenderer.invoke('config:reset'),
-  chooseBackground: () => ipcRenderer.invoke('wallpaper:choose'),
+  chooseBackground: (theme) => ipcRenderer.invoke('wallpaper:choose', theme),
   setAutoStart: (enabled) => ipcRenderer.invoke('app:set-auto-start', enabled),
+  aodWake: () => ipcRenderer.invoke('aod:wake'),
 
   launchApp: (key) => ipcRenderer.invoke('launch:app', key),
   launchFile: (filePath) => ipcRenderer.invoke('launch:file', filePath),
@@ -46,6 +47,12 @@ contextBridge.exposeInMainWorld('sunrise', {
   clipboardWrite: (text) => ipcRenderer.invoke('app:clipboard-write', text),
   log: (level, message) => ipcRenderer.invoke('log:renderer', level, message),
 
+  usbDrives: () => ipcRenderer.invoke('usb:drives-get'),
+  usbRoots: () => ipcRenderer.invoke('usb:roots'),
+  usbList: (payload) => ipcRenderer.invoke('usb:list', payload),
+  usbCopy: (payload) => ipcRenderer.invoke('usb:copy', payload),
+  usbCopyCancel: (id) => ipcRenderer.invoke('usb:copy-cancel', id),
+
   onDownloadQueued: (cb) => subscribe('download:queued', cb),
   onDownloadStart: (cb) => subscribe('download:start', cb),
   onDownloadProgress: (cb) => subscribe('download:progress', cb),
@@ -56,6 +63,10 @@ contextBridge.exposeInMainWorld('sunrise', {
   onViewerOpen: (cb) => subscribe('viewer:open', cb),
   onToast: (cb) => subscribe('toast', cb),
   onNasStatus: (cb) => subscribe('nas:status', cb),
+  onAodState: (cb) => subscribe('aod:state', cb),
   onCloseBlocked: (cb) => subscribe('shell:close-blocked', cb),
   onQuitting: (cb) => subscribe('shell:quitting', cb),
+  onUsbDrives: (cb) => subscribe('usb:drives', cb),
+  onUsbCopyProgress: (cb) => subscribe('usb:copy-progress', cb),
+  onUsbCopyDone: (cb) => subscribe('usb:copy-done', cb),
 });

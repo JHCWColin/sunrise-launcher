@@ -1,0 +1,223 @@
+/* ==========================================================================
+   v1.9.5 自动熄屏常显（Always-on Display）
+   模仿 iPhone 熄屏显示：不是盖一层近似纯黑的幕布，而是真正「降低壁纸亮度」——
+   熄屏时壁纸三层整体压暗到约三分之一亮度（深色遮罩接管、装饰纱层淡出），
+   壁纸本身仍然清晰可辨，画面只保留中间偏上的内容：大号数字时钟位于
+   屏幕正中，公历 / 农历两行日期紧贴其上（行距很紧），全部文字统一略带
+   透明，底部一行「轻点任意位置解锁」。
+
+   进入 / 退出熄屏均带完整动画：
+   - 壁纸组：亮度渐变（遮罩透明度过渡）+ 轻微缩放（1.02 → 1.06 的呼吸感）；
+   - 熄屏内容：淡入淡出 + 从 0.94 到 1 的一点点缩放；
+   - 底部提示：最后延迟淡入，退出时立即淡出。
+   ========================================================================== */
+
+/* 全部熄屏文字统一的透明度（略有透明） */
+.aod-layer {
+  --aod-text-alpha: 0.8;
+  position: fixed;
+  inset: 0;
+  /* 高于所有界面（开场动画 1000、图片预览 600、弹窗层 500） */
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* v1.9.5：只做很轻的暗角，保证时钟在任何壁纸上都读得清；
+     主要压暗工作交给壁纸层自身的遮罩过渡，壁纸不再被近似纯黑的
+     幕布盖死，而是「同一张壁纸、亮度降到约三分之一」。 */
+  background:
+    radial-gradient(125% 90% at 50% 34%, rgba(5, 7, 11, 0.03) 0%, rgba(4, 6, 10, 0.09) 55%, rgba(2, 4, 7, 0.18) 100%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  /* 退出（唤醒）用稍快的 0.4s，visibility 延时与其保持一致 */
+  transition: opacity 0.4s ease, visibility 0s linear 0.4s;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+.aod-layer.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  /* 进入熄屏稍慢一点，和壁纸压暗 / 缩放同步 */
+  transition: opacity 0.5s ease;
+}
+
+/* ---------- v1.9.5 壁纸组：熄屏压暗 + 轻微缩放 ----------
+   熄屏不再用纯黑大遮罩盖住画面，而是：
+   - .wallpaper-dim 熄屏期间固定为深空色 #05070c、不透明度 0.66，
+     等效于把整幅壁纸亮度乘以约 0.34（黑遮罩对下层是逐像素乘法，
+     与 brightness 滤镜数学等价，但任何 GPU 都能平滑过渡）；
+   - 浅色模式的白色遮罩在熄屏期间同样切换为这块深色遮罩，
+     两种主题熄屏观感一致；
+   - .wallpaper-veil（装饰纱层）与 .ambient（光晕）大幅淡出，
+     只留一点氛围；
+   - .wallpaper 轻微放大到 1.06，与压暗一起构成进 / 出熄屏的
+     「呼吸」缩放动画（底层本来就 scale(1.02)，放大不会露出边缘）。
+   每条过渡都写在「目标状态」上：进入用 0.6s 缓出，唤醒回到
+   亮屏时用更利落的 0.35~0.45s。 */
+
+/* 唤醒（退出熄屏）时的过渡速度 —— 壁纸组基线 */
+.wallpaper {
+  transition: transform 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.wallpaper-dim {
+  transition: opacity 0.35s ease, background-color 0.6s ease;
+}
+
+.wallpaper-veil,
+.ambient {
+  transition: opacity 0.35s ease;
+}
+
+/* 进入熄屏：整组放慢、缓出，压暗与缩放同步 */
+body.aod-active .wallpaper {
+  transform: scale(1.06);
+  transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+body.aod-active .wallpaper-dim {
+  background: #05070c;
+  opacity: 0.78;
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 0.61, 0.36, 1),
+    background-color 0.6s ease;
+}
+
+body.aod-active .wallpaper-veil {
+  opacity: 0;
+  transition: opacity 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+body.aod-active .ambient {
+  opacity: 0.05;
+  transition: opacity 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* 内容块：整组先在屏幕中垂直居中，再上移一截 —— 大号时钟作为块内主体
+   恰好压在屏幕正中，其上的两行日期把整组重心抬到「中间偏上」。
+   （弹性居中 + 上移，对任意分辨率 / 宽高比都成立，不用猜百分比 top）
+   v1.9.5：进 / 出熄屏叠加淡入淡出 + 0.94 → 1 的一点点缩放。 */
+.aod-content {
+  position: relative;
+  width: 100%;
+  transform: translateY(-8vh) scale(0.94);
+  opacity: 0;
+  text-align: center;
+  font-family: 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
+  padding: 0 4vw;
+  /* 退出（唤醒）时干净利落 */
+  transition:
+    opacity 0.3s ease,
+    transform 0.38s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.aod-layer.is-active .aod-content {
+  transform: translateY(-8vh) scale(1);
+  opacity: 1;
+  /* 进入时轻微错峰：等壁纸开始压暗后内容再浮现 */
+  transition:
+    opacity 0.55s ease 0.12s,
+    transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) 0.12s;
+}
+
+.aod-date {
+  margin: 0 0 0.15em;
+  font-size: min(2.6vw, 4.6vh);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  color: rgba(243, 245, 250, var(--aod-text-alpha));
+}
+
+.aod-date-lunar {
+  color: rgba(243, 245, 250, var(--aod-text-alpha));
+  /* 与下方大时钟只留一道窄缝 */
+  margin-bottom: 0.35em;
+}
+
+.aod-clock {
+  font-size: min(15vw, 27vh);
+  font-weight: 500;
+  line-height: 1.06;
+  letter-spacing: 0.01em;
+  color: rgba(243, 245, 250, var(--aod-text-alpha));
+  font-variant-numeric: tabular-nums;
+  /* 壁纸不再被压成纯黑，阴影稍微加深保证对比度 */
+  text-shadow: 0 0 34px rgba(0, 0, 0, 0.45);
+}
+
+/* 底部提示：轻点任意位置解锁（最后延迟浮现，退出时立即淡出） */
+.aod-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 7vh;
+  margin: 0;
+  text-align: center;
+  font-family: 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
+  font-size: min(1.3vw, 2.3vh);
+  font-weight: 400;
+  letter-spacing: 0.32em;
+  /* 字距拉开了，最后一个字后面也有空隙，整体往左回半个字距保持居中 */
+  text-indent: 0.32em;
+  /* 与日期 / 时钟统一的略带透明 */
+  color: rgba(243, 245, 250, var(--aod-text-alpha));
+  opacity: 0;
+  transform: scale(0.97);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.aod-layer.is-active .aod-hint {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 0.5s ease 0.32s,
+    transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) 0.32s;
+}
+
+/* 熄屏时隐藏底下的全部界面，只留压暗后的壁纸 */
+body.aod-active .shell,
+body.aod-active .files-page,
+body.aod-active .usb-page,
+body.aod-active .settings-drawer,
+body.aod-active .recent-sheet,
+body.aod-active .scrim,
+body.aod-active .modal-layer,
+body.aod-active .toast-layer,
+body.aod-active .download-tray,
+body.aod-active .image-viewer,
+body.aod-active .intro {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.45s ease !important;
+}
+
+/* 降低动效：熄屏进 / 出动画缩短到接近瞬切，并去掉错峰延迟 */
+[data-reduce-motion="true"] .wallpaper,
+[data-reduce-motion="true"] .wallpaper-dim,
+[data-reduce-motion="true"] .wallpaper-veil,
+[data-reduce-motion="true"] .ambient,
+[data-reduce-motion="true"] .aod-layer,
+[data-reduce-motion="true"] .aod-content,
+[data-reduce-motion="true"] .aod-hint,
+[data-reduce-motion="true"] body.aod-active .shell,
+[data-reduce-motion="true"] body.aod-active .files-page,
+[data-reduce-motion="true"] body.aod-active .usb-page,
+[data-reduce-motion="true"] body.aod-active .settings-drawer,
+[data-reduce-motion="true"] body.aod-active .recent-sheet,
+[data-reduce-motion="true"] body.aod-active .scrim,
+[data-reduce-motion="true"] body.aod-active .modal-layer,
+[data-reduce-motion="true"] body.aod-active .toast-layer,
+[data-reduce-motion="true"] body.aod-active .download-tray,
+[data-reduce-motion="true"] body.aod-active .image-viewer,
+[data-reduce-motion="true"] body.aod-active .intro {
+  transition-duration: 0.12s !important;
+  transition-delay: 0s !important;
+}

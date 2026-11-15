@@ -15,11 +15,14 @@ const {
 const store = require('./store');
 const apps = require('./apps');
 const log = require('./logger');
+const usb = require('./usb');
+const { findExistingDownload } = require('./downloads');
 
 const CONFIG_KEYS = new Set([
-  'theme', 'accent', 'glass', 'glow', 'bgDim', 'background', 'reduceMotion',
-  'skipIntro', 'clock24h', 'showSeconds', 'downloadsDir', 'autoOpen', 'autoOpenTypes',
+  'theme', 'accent', 'glass', 'glow', 'bgDim', 'bgDimLight', 'backgroundDark', 'backgroundLight',
+  'reduceMotion', 'skipIntro', 'clock24h', 'showSeconds', 'downloadsDir', 'autoOpen', 'autoOpenTypes',
   'videoPlayer', 'wpsPath', 'autoStart', 'preventSleep', 'showRecent',
+  'aodEnabled', 'aodTimeoutSec',
 ]);
 
 const BACKGROUND_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'];
@@ -101,6 +104,8 @@ function statePayload(ctx) {
 function registerIpc(ctx) {
   const { nas, downloader, watcher, send } = ctx;
 
+  usb.registerUsbIpc(ipcMain, { autoOpenFile: ctx.openDownloaded });
+
   ipcMain.handle('app:get-state', async () => statePayload(ctx));
 
   ipcMain.handle('config:update', async (event, rawPatch) => {
@@ -131,10 +136,12 @@ function registerIpc(ctx) {
     return { ok: true, config: next, apps: apps.detect(next) };
   });
 
-  ipcMain.handle('wallpaper:choose', async () => {
+  ipcMain.handle('wallpaper:choose', async (event, rawTheme) => {
+    // v1.9.0：暗色 / 亮色模式各自独立的壁纸。theme 参数决定写入哪一套配置。
+    const theme = rawTheme === 'light' ? 'light' : 'dark';
     const win = ctx.getWindow();
     const result = await dialog.showOpenDialog(win, {
-      title: '选择背景图片',
+      title: theme === 'light' ? '选择浅色模式壁纸' : '选择深色模式壁纸',
       properties: ['openFile'],
       filters: [{ name: '图片', extensions: BACKGROUND_EXTS }],
       buttonLabel: '使用此图片',
@@ -153,7 +160,8 @@ function registerIpc(ctx) {
     const userData = app.getPath('userData');
     const bgDir = path.join(userData, 'backgrounds');
     const safeName = path.basename(src).replace(/[\\/:*?"<>|]/g, '_').slice(0, 120) || `background.${ext}`;
-    const dest = path.join(bgDir, safeName);
+    // v1.9.0：两套壁纸分开命名，深浅各留一份，互不覆盖。
+    const dest = path.join(bgDir, `${theme}-${safeName}`);
     try {
       fs.mkdirSync(bgDir, { recursive: true });
       if (path.resolve(src) !== path.resolve(dest)) {
@@ -163,18 +171,29 @@ function registerIpc(ctx) {
     } catch (err) {
       return { ok: false, message: `无法保存背景图片：${err.message}` };
     }
-    // 清理旧背景副本，避免用户数据目录堆积。
+    // 清理旧背景副本，避免用户数据目录堆积（保留当前深浅两套正在使用的文件）。
+    const keep = new Set([path.basename(dest)]);
+    const currentBg = store.get();
+    for (const active of [currentBg.backgroundDark, currentBg.backgroundLight]) {
+      if (active) keep.add(path.basename(active));
+    }
     try {
       for (const name of fs.readdirSync(bgDir)) {
-        if (name === path.basename(dest)) continue;
+        if (keep.has(name)) continue;
         fs.rmSync(path.join(bgDir, name), { force: true });
       }
     } catch (_) { /* ignore */ }
 
     const previous = store.get();
-    const next = store.update({ background: dest });
+    const next = store.update(theme === 'light' ? { backgroundLight: dest } : { backgroundDark: dest });
     ctx.applyConfigEffects(next, previous);
-    return { ok: true, config: next };
+    return { ok: true, config: next, theme };
+  });
+
+  // v1.9.0：渲染进程熄屏层被轻点后的即时唤醒（不等下一次空闲轮询）。
+  ipcMain.handle('aod:wake', async () => {
+    if (ctx.wakeAod) ctx.wakeAod();
+    return { ok: true };
   });
 
   ipcMain.handle('app:set-auto-start', async (event, enabled) => {
@@ -239,6 +258,24 @@ function registerIpc(ctx) {
     const name = typeof payload.name === 'string' && payload.name
       ? payload.name
       : path.basename(nasPath);
+    // v1.8.0 防重复下载：同一 NAS 文件此前已下载过且本地副本还在（大小也没变），
+    // 直接打开本地副本，不再重新下载、不再生成「文件名 (2).ext」。
+    const existing = findExistingDownload(nasPath, payload.size);
+    if (existing) {
+      log.info('命中已下载索引，直接打开本地副本:', existing.local);
+      try {
+        ctx.openDownloaded(existing.local, 'nas', true);
+      } catch (err) {
+        log.warn('打开已下载副本失败:', err.message);
+      }
+      return {
+        ok: true,
+        alreadyDownloaded: true,
+        path: existing.local,
+        name: existing.name,
+        size: existing.size,
+      };
+    }
     try {
       const result = await downloader.enqueue(nasPath, name, payload.size);
       return result;
@@ -382,6 +419,9 @@ function registerIpc(ctx) {
       `VLC: ${info.vlc.available ? info.vlc.path : '未找到'}`,
       `PotPlayer: ${info.potplayer.available ? info.potplayer.path : '未找到'}`,
       `主题: ${config.theme}  玻璃: ${config.glass}  降低动效: ${config.reduceMotion}`,
+      `壁纸: 深色=${config.backgroundDark || '默认'}  浅色=${config.backgroundLight || '默认'}`,
+      `遮罩: 深色=${config.bgDim}  浅色=${config.bgDimLight}`,
+      `熄屏常显: ${config.aodEnabled ? `开启 · ${config.aodTimeoutSec}s 无操作` : '关闭'}`,
     ];
     return { ok: true, text: lines.join('\r\n') };
   });

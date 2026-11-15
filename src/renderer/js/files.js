@@ -192,7 +192,7 @@ function rowHtml(entry, index) {
   return `
     <div class="file-row ${item.isdir ? 'is-folder' : ''} ${busy ? 'is-downloading' : ''}"
          data-index="${index}" data-nas-path="${escapeHtml(item.path)}" role="listitem" tabindex="0"
-         style="--file-rgb:${visual.rgb};--row-i:${Math.min(index, 14)}">
+         style="--file-rgb:${visual.rgb}">
       <div class="file-main">
         <span class="file-icon">${visual.svg}</span>
         <span class="file-text">
@@ -361,7 +361,14 @@ async function downloadItem(item, row) {
     }
     pending.delete(item.path);
     setRowDone(row);
-    if (state.config && state.config.autoOpen === false) {
+    if (result.alreadyDownloaded) {
+      // v1.8.0：命中已下载索引，主进程已直接打开本地副本。
+      toast({
+        type: 'success',
+        message: '这个文件之前已经下载过，已直接打开本地副本。',
+        duration: 5000,
+      });
+    } else if (state.config && state.config.autoOpen === false) {
       toast({
         type: 'success',
         message: `已下载：${result.name || item.name}`,
@@ -520,6 +527,7 @@ export function openFilesPage({ reset = true } = {}) {
   pageOpen = true;
   state.page = 'files';
   if (!dom.page) return;
+  document.body.classList.add('files-open');
   dom.page.classList.add('is-open');
   dom.page.setAttribute('aria-hidden', 'false');
   if (reset || !currentPath) {
@@ -539,6 +547,7 @@ export function closeFilesPage() {
     dom.page.classList.remove('is-open');
     dom.page.setAttribute('aria-hidden', 'true');
   }
+  document.body.classList.remove('files-open');
   if (hooks.onClose) hooks.onClose();
 }
 

@@ -2,9 +2,9 @@
   position: fixed;
   inset: 0;
   z-index: 80;
-  background: rgba(12, 9, 7, 0.50);
-  backdrop-filter: blur(9px);
-  -webkit-backdrop-filter: blur(9px);
+  background: rgba(12, 9, 7, 0.58);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.5s, visibility 0.5s;
@@ -14,7 +14,7 @@
   visibility: visible;
 }
 [data-theme="light"] .scrim {
-  background: rgba(232, 239, 247, 0.42);
+  background: rgba(232, 239, 247, 0.52);
 }
 
 .settings-drawer {
@@ -29,12 +29,12 @@
   transform: translateX(105%);
   visibility: hidden;
   background:
-    linear-gradient(160deg, rgba(255, 240, 220, 0.08), rgba(255, 240, 220, 0.012) 32%, rgba(255, 240, 220, 0.045)),
-    rgba(31, 26, 22, 0.80);
+    linear-gradient(160deg, rgba(var(--glass-border-rgb), 0.08), rgba(var(--glass-border-rgb), 0.012) 32%, rgba(var(--glass-border-rgb), 0.045)),
+    rgba(var(--glass-base-rgb), 0.92);
   border-left: 1px solid var(--glass-border-strong);
-  box-shadow: -40px 0 120px rgba(8, 6, 4, 0.50), inset 1px 0 0 rgba(255, 242, 224, 0.10);
-  backdrop-filter: blur(42px) saturate(185%);
-  -webkit-backdrop-filter: blur(42px) saturate(185%);
+  box-shadow: -40px 0 120px rgba(var(--shadow-rgb), 0.50), inset 1px 0 0 rgba(var(--glass-border-rgb), 0.10);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.62s;
 }
 .settings-drawer.is-open {
@@ -43,8 +43,8 @@
 }
 [data-theme="light"] .settings-drawer {
   background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.42) 36%, rgba(255, 255, 255, 0.74)),
-    rgba(247, 250, 254, 0.80);
+    linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.62) 36%, rgba(255, 255, 255, 0.86)),
+    rgba(247, 250, 254, 0.92);
   border-left-color: rgba(255, 255, 255, 0.9);
   box-shadow: -40px 0 120px rgba(31, 50, 73, 0.20), inset 1px 0 0 rgba(255, 255, 255, 0.95);
 }
@@ -234,6 +234,7 @@
 /* 强调色 */
 .swatches {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   flex: 0 0 auto;
 }
@@ -250,6 +251,10 @@
 }
 .swatch.sunrise { background: linear-gradient(135deg, #f2c4a8, #d97757); }
 .swatch.ocean { background: linear-gradient(135deg, #b7c9d3, #7e9fb3); }
+.swatch.sakura { background: linear-gradient(135deg, #e8afc0, #d98ba1); }
+.swatch.amber { background: linear-gradient(135deg, #e0bb85, #cf9f5a); }
+.swatch.glacier { background: linear-gradient(135deg, #a8cfd3, #82b4b9); }
+.swatch.dusk { background: linear-gradient(135deg, #a3b1d6, #7d8fc0); }
 .swatch.violet { background: linear-gradient(135deg, #d3bccb, #b08a9e); }
 .swatch.emerald { background: linear-gradient(135deg, #c7d3b6, #8fa07a); }
 .swatch.is-active::after {
@@ -339,8 +344,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
   background-repeat: no-repeat;
 }
 .field select option {
-  background: #241f19;
-  color: #f4efe6;
+  background: rgb(var(--bg-rgb));
+  color: rgb(var(--text-rgb));
 }
 .field-grid {
   display: grid;
@@ -619,4 +624,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
   .setting-row {
     gap: 12px;
   }
+}
+
+/* v1.9.0：熄屏常显关闭时，等待时长滑杆整体置灰不可用 */
+.setting-row.is-disabled {
+  opacity: 0.42;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+/* 列式设置行右侧的数值（如「1 分钟」「100%」）不允许换行，
+   窗口较窄时保持单行完整显示 */
+.setting-row.column .setting-label span {
+  white-space: nowrap;
 }

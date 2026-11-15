@@ -7,6 +7,7 @@ export const state = {
   autoStartEnabled: false,
   display: null,
   recent: [],
+  usbDrives: [],
   page: 'home',
   downloadItems: new Map(),
   startedAt: 0,

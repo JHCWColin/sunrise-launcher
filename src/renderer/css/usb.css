@@ -1,0 +1,444 @@
+/* ---------- 移动存储设备（U 盘双向拷贝）页面 ----------
+   设计语言与 FTP 课件中心（files.css）保持一致：
+   同样的玻璃面板、工具栏、行列表、状态位与骨架屏。 */
+
+.usb-page {
+  position: fixed;
+  inset: 0;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(16px, 2.1vw, 40px) clamp(22px, 3vw, 58px) clamp(14px, 1.8vh, 26px);
+  gap: clamp(10px, 1.6vh, 20px);
+  background: rgba(12, 9, 7, 0.55);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.22s ease, visibility 0.22s;
+}
+[data-theme="light"] .usb-page {
+  background: rgba(var(--bg-rgb), 0.62);
+}
+.usb-page.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.usb-drive-pill {
+  cursor: pointer;
+}
+.usb-drive-pill:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---------- 双栏布局（v1.5：中缝双向图标已删除，纯两栏） ---------- */
+.usb-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(8px, 1vw, 16px);
+}
+
+.usb-pane {
+  border-radius: clamp(22px, 1.7vw, 28px);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.usb-pane-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: clamp(12px, 1.1vw, 18px) clamp(14px, 1.3vw, 22px) 4px;
+}
+.usb-pane-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+.usb-pane-eyebrow {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.usb-pane-title b {
+  font-size: clamp(14px, 1vw, 18px);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.usb-roots {
+  flex: 0 0 auto;
+}
+.usb-roots button {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 11.5px;
+}
+.usb-free {
+  flex: 0 0 auto;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  color: var(--text-2);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+[data-theme="light"] .usb-free {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(255, 255, 255, 0.72);
+}
+
+/* v1.5：中缝双向交换图标已移除。 */
+
+/* ---------- 工具栏（窄栏版） ---------- */
+.usb-toolbar {
+  padding: clamp(10px, 0.9vw, 14px) clamp(12px, 1.1vw, 18px);
+}
+.usb-search {
+  width: clamp(140px, 12vw, 200px);
+  height: 38px;
+}
+
+/* ---------- 列表 ---------- */
+.usb-list-head,
+.usb-row {
+  /* 5 列：勾选框 / 名称 / 大小 / 修改时间 / 操作 */
+  grid-template-columns: clamp(26px, 2vw, 32px) minmax(0, 1fr) 76px 112px 42px;
+  gap: 8px;
+}
+.usb-list {
+  padding: 4px clamp(4px, 0.6vw, 10px) 16px;
+}
+
+.usb-row {
+  min-height: clamp(54px, 6.4vh, 68px);
+}
+.usb-row .file-name {
+  font-size: clamp(12.5px, 0.88vw, 15.5px);
+}
+.usb-row .file-kind {
+  font-size: clamp(8.5px, 0.58vw, 10.5px);
+}
+.usb-row .file-size,
+.usb-row .file-time {
+  font-size: clamp(9.5px, 0.68vw, 12px);
+}
+.usb-row .file-icon {
+  width: clamp(32px, 2.3vw, 40px);
+  border-radius: 10px;
+}
+.usb-row .file-action {
+  width: clamp(30px, 2.2vw, 38px);
+}
+.usb-row .file-action svg {
+  width: 15px;
+  height: 15px;
+}
+
+.usb-check {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  color: transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+[data-theme="light"] .usb-check {
+  border-color: rgba(var(--text-rgb), 0.25);
+}
+.usb-check svg {
+  width: 14px;
+  height: 14px;
+}
+.usb-row:hover .usb-check {
+  border-color: rgba(var(--accent-rgb), 0.55);
+}
+.usb-row.is-selected .usb-check {
+  background: rgba(var(--accent-rgb), 0.95);
+  border-color: transparent;
+  color: var(--accent-text);
+}
+.usb-row.is-selected {
+  background: rgba(var(--accent-rgb), 0.09);
+  border-color: rgba(var(--accent-rgb), 0.2);
+}
+.usb-row.is-folder .usb-check {
+  visibility: hidden;
+}
+.usb-row.is-selected .file-action {
+  color: var(--accent);
+}
+
+/* ---------- 底部操作区 ---------- */
+.usb-pane-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: clamp(10px, 1vh, 14px) clamp(14px, 1.3vw, 22px) clamp(12px, 1.2vw, 18px);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .usb-pane-foot {
+  border-top-color: rgba(17, 22, 29, 0.06);
+}
+.usb-select-info {
+  min-width: 0;
+  font-size: clamp(11px, 0.78vw, 13px);
+  color: var(--text-2);
+  letter-spacing: 0.03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.usb-select-info b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.usb-foot-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.usb-copy-btn {
+  height: 46px;
+  padding: 0 22px;
+  font-size: 14px;
+}
+.usb-copy-btn:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* ---------- 拷贝进度浮层 ---------- */
+.usb-progress {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(18px, 3vh, 30px);
+  transform: translateX(-50%);
+  z-index: 300;
+  width: min(620px, 94vw);
+}
+.usb-progress-panel {
+  padding: 14px 16px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: toastIn 0.18s ease;
+}
+.usb-progress-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.usb-progress-top .spinner {
+  flex: 0 0 auto;
+}
+.usb-progress-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.3;
+}
+.usb-progress-text b {
+  font-size: 13.5px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.usb-progress-text span {
+  font-size: 10.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.usb-progress-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+[data-theme="light"] .usb-progress-bar {
+  background: rgba(17, 22, 29, 0.08);
+}
+.usb-progress-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  background: var(--accent);
+  transition: width 0.15s ease;
+}
+.usb-progress-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.usb-progress-sub span:first-child {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---------- 适配 ---------- */
+@media (max-width: 1320px) {
+  .usb-list-head,
+  .usb-row {
+    grid-template-columns: clamp(26px, 2vw, 32px) minmax(0, 1fr) 70px 40px;
+  }
+  .usb-row .file-time,
+  .usb-list-head span:nth-child(4) {
+    display: none;
+  }
+}
+@media (max-width: 1100px) {
+  .usb-search {
+    width: 130px;
+  }
+}
+@media (max-width: 900px) {
+  .usb-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .usb-pane-head {
+    flex-wrap: wrap;
+  }
+  .usb-copy-btn {
+    height: 42px;
+    padding: 0 16px;
+    font-size: 13px;
+  }
+  .usb-foot-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+@media (max-height: 780px) {
+  .usb-row {
+    min-height: 52px;
+  }
+}
+/* ===== v1.8.0 多 U 盘选择对话框（渲染进程内 div，与整体设计语言一致） ===== */
+.drive-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.drive-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s, transform 0.25s;
+}
+.drive-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(var(--accent-rgb), 0.45);
+}
+.drive-card:active {
+  transform: translateY(0) scale(0.99);
+}
+.drive-glyph {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: rgb(var(--accent-rgb));
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
+}
+.drive-glyph svg {
+  width: 22px;
+  height: 22px;
+}
+.drive-info {
+  flex: 1;
+  min-width: 0;
+}
+.drive-name {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.drive-meta {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.drive-cap {
+  display: block;
+  margin-top: 9px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.10);
+  overflow: hidden;
+}
+.drive-cap i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.drive-cap-text {
+  display: block;
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+[data-theme="light"] .drive-card {
+  background: rgba(var(--text-rgb), 0.045);
+  border-color: var(--glass-border);
+}
+[data-theme="light"] .drive-card:hover {
+  background: rgba(var(--text-rgb), 0.08);
+  border-color: rgba(var(--accent-rgb), 0.50);
+}
+[data-theme="light"] .drive-cap {
+  background: rgba(var(--text-rgb), 0.12);
+}

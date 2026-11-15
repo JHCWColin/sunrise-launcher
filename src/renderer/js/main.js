@@ -5,7 +5,7 @@ import {
   closeActiveModal, initCursorIdle, toast,
 } from './ui.js';
 import {
-  initHome, refreshHome, refreshRecent, updateNasPill, updateThemeIcon,
+  initHome, refreshHome, refreshRecent, updateNasPill, updateUsbEntry,
   isRecentSheetOpen, closeRecentSheet,
 } from './home.js';
 import {
@@ -14,13 +14,17 @@ import {
 } from './files.js';
 import {
   initSettings, openSettings, closeSettings, isSettingsOpen,
-  setThemeAndSave, refreshSettings,
+  refreshSettings,
 } from './settings.js';
 import { initDownloadsUI } from './downloads-ui.js';
 import {
   initImageViewer, openImageViewer, closeImageViewer, isImageViewerOpen,
 } from './viewer.js';
+import {
+  initUsbBrowser, openUsbBrowser, closeUsbBrowser, isUsbBrowserOpen, usbDrivesChanged,
+} from './usb-ui.js';
 import { startClock } from './clock.js';
+import { initAod, isAodActive } from './aod.js';
 import { playIntro } from './intro.js';
 
 let offlineNotified = false;
@@ -33,7 +37,7 @@ function revealShell() {
   shell.setAttribute('aria-hidden', 'false');
   document.body.classList.add('is-ready');
   refreshHome();
-  updateThemeIcon();
+  updateUsbEntry();
   setTimeout(() => {
     api.focusWindow().catch(() => {});
   }, 260);
@@ -49,8 +53,21 @@ function hideFiles() {
   closeFilesPage();
 }
 
+async function showUsb() {
+  // v1.8.0：多个 U 盘时先弹「选择 U 盘」对话框，取消则不进入页面，
+  // 主界面也不进入半透明退场状态（is-behind 只在真正打开页面后才加）。
+  const opened = await openUsbBrowser();
+  if (opened && shell) shell.classList.add('is-behind');
+}
+
+function hideUsb() {
+  if (shell) shell.classList.remove('is-behind');
+  closeUsbBrowser();
+}
+
 function handleEscape(event) {
   if (event.key !== 'Escape') return;
+  if (isAodActive()) return; // 熄屏层的键盘监听已负责唤醒，不碰底下的界面
   const modal = document.getElementById('modal-layer');
   if (modal && !modal.classList.contains('is-hidden')) {
     closeActiveModal();
@@ -69,6 +86,11 @@ function handleEscape(event) {
   }
   if (isSettingsOpen()) {
     closeSettings();
+    event.preventDefault();
+    return;
+  }
+  if (isUsbBrowserOpen()) {
+    hideUsb();
     event.preventDefault();
     return;
   }
@@ -134,6 +156,14 @@ function bindGlobalEvents() {
     updateFilesRecent();
   });
 
+  api.onUsbDrives((payload) => {
+    if (!payload) return;
+    const drives = Array.isArray(payload.drives) ? payload.drives : [];
+    state.usbDrives = drives;
+    updateUsbEntry(drives);
+    usbDrivesChanged(drives);
+  });
+
   window.addEventListener('keydown', handleEscape);
   window.addEventListener('dragover', (event) => event.preventDefault());
   window.addEventListener('drop', (event) => event.preventDefault());
@@ -149,11 +179,6 @@ function bindGlobalEvents() {
       api.log('error', `unhandled rejection: ${reason && reason.stack ? reason.stack : String(reason)}`);
     } catch (_) { /* ignore */ }
   });
-}
-
-async function toggleTheme() {
-  const next = state.config && state.config.theme === 'dark' ? 'light' : 'dark';
-  await setThemeAndSave(next);
 }
 
 async function boot() {
@@ -180,14 +205,14 @@ async function boot() {
   applyAccent(config.accent);
   applyGlass(config.glass);
   applyGlow(config.glow);
-  applyBgDim(config.bgDim);
-  applyBackground(config.background);
+  applyBgDim(config);
+  applyBackground(config);
   applyMotion(config.reduceMotion);
 
   initHome({
     onOpenFiles: showFiles,
     onOpenSettings: openSettings,
-    onToggleTheme: toggleTheme,
+    onOpenUsb: showUsb,
   });
   initFiles({
     onOpenSettings: openSettings,
@@ -205,8 +230,27 @@ async function boot() {
   });
   initDownloadsUI();
   initImageViewer();
+  initUsbBrowser({
+    onClose: () => {
+      // v1.5 修复：退出 USB 页面时必须移除 shell 的 is-behind，
+      // 否则主界面停留在半透明且不可交互的状态（表现为画面卡死）。
+      if (shell) shell.classList.remove('is-behind');
+      refreshHome();
+      api.focusWindow().catch(() => {});
+    },
+  });
   initCursorIdle();
   startClock(config);
+  initAod(config);
+
+  // 拉取一次当前 U 盘状态（事件可能在页面加载前就已发出）。
+  api.usbDrives().then((res) => {
+    if (res && Array.isArray(res.drives)) {
+      state.usbDrives = res.drives;
+      updateUsbEntry(res.drives);
+      usbDrivesChanged(res.drives);
+    }
+  }).catch(() => {});
 
   playIntro({
     reduceMotion: config.reduceMotion,

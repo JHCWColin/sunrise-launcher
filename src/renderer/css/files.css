@@ -6,27 +6,102 @@
   flex-direction: column;
   padding: clamp(16px, 2.1vw, 40px) clamp(22px, 3vw, 58px) clamp(14px, 1.8vh, 26px);
   gap: clamp(10px, 1.6vh, 20px);
-  background:
-    radial-gradient(120% 90% at 50% 0%, rgba(30, 23, 18, 0.16), rgba(12, 9, 7, 0.64)),
-    rgba(12, 9, 7, 0.24);
+  /* 纯半透明遮罩：一层纯色 rgba，不模糊、不打光，4K 下也只是一次静态填充。
+     浓度跟随「背景遮罩」设置，用来替代原来叠在背后的 .wallpaper-dim 图层。 */
+  background: rgba(10, 8, 6, calc(0.30 + 0.72 * var(--bg-dim)));
   opacity: 0;
   visibility: hidden;
-  transform: translateY(22px) scale(0.992);
   pointer-events: none;
-  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 0.65s cubic-bezier(0.22, 1, 0.36, 1),
-              visibility 0.55s;
+  transition: opacity 0.2s ease, visibility 0.2s;
 }
+/* v1.9.0：浅色模式的浏览窗口底色改跟浅色（白色）遮罩强度走 */
 [data-theme="light"] .files-page {
-  background:
-    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.34), rgba(244, 238, 228, 0.74)),
-    rgba(246, 240, 231, 0.34);
+  background: rgba(var(--bg-rgb), calc(0.50 + 0.36 * var(--bg-dim-light)));
 }
 .files-page.is-open {
   opacity: 1;
   visibility: visible;
-  transform: none;
   pointer-events: auto;
+}
+
+/* ==========================================================================
+   课件浏览页 · 无玻璃（纯半透明）
+   --------------------------------------------------------------------------
+   backdrop-filter 的模糊要在每一帧重新采样面板背后的画面，成本随「面板面积」
+   线性增长：1080p 约 200 万像素，4K 约 830 万像素，同一块面板的模糊开销直
+   接翻到 4 倍多，所以这一页在 1080p 是 60fps、换到 4K 就只剩个位数帧率。
+
+   现在整页彻底去掉玻璃：没有 backdrop-filter / saturate、没有渐变叠层、没有
+   噪点混合、没有内发光和大投影。面板只画一层半透明纯色，不读取背后内容，
+   不产生离屏渲染表面，绘制成本和普通 div 完全一样；视觉上依旧透出壁纸，
+   只是不再「磨砂」。
+   ========================================================================== */
+
+body.files-open .wallpaper,
+body.files-open .ambient-orb {
+  animation-play-state: paused;
+}
+body.files-open .ambient-grain {
+  display: none;
+}
+body.files-open .shell {
+  display: none !important;
+}
+
+/* 打开课件库时把主界面背景整体「压平」成一个静态图层：
+   - 壁纸去掉 saturate/sepia/contrast 滤镜（滤镜会让整屏每帧多一次颜色矩阵）；
+   - 光晕球（blur 70px）、纱层渐变、遮罩层全部移出渲染树，
+     它们的观感并入 .files-page 自己那层半透明底色里。
+   于是每帧需要合成的大面积图层从 6 层降到 2 层（壁纸 + 本页）。 */
+body.files-open .wallpaper {
+  animation: none;
+  filter: none;
+  transform: none;
+  inset: 0;
+}
+body.files-open .wallpaper-dim,
+body.files-open .wallpaper-veil,
+body.files-open .ambient {
+  display: none !important;
+}
+
+/* 深色：半透明面板 */
+.files-page .glass-panel {
+  background: rgba(30, 24, 19, var(--glass-alpha));
+  border: 1px solid rgba(255, 237, 216, 0.10);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* 玻璃自带的渐变高光 / 噪点层一律关掉 */
+.files-page .glass-panel::before,
+.files-page .glass-panel::after {
+  display: none;
+}
+[data-theme="light"] .files-page .glass-panel {
+  background: rgba(var(--glass-base-rgb), var(--glass-alpha-light));
+  border-color: rgba(var(--glass-border-rgb), 0.86);
+}
+
+/* 圆形图标按钮：同样纯半透明，无模糊、无投影 */
+.files-page .glass-chip {
+  background: rgba(var(--glass-border-rgb), 0.08);
+  border: 1px solid rgba(var(--glass-border-rgb), 0.12);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+[data-theme="light"] .files-page .glass-chip {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(255, 255, 255, 0.92);
+}
+.files-page .glass-chip:hover {
+  background: rgba(var(--glass-border-rgb), 0.13);
+  border-color: rgba(var(--glass-border-rgb), 0.18);
+  box-shadow: none;
+}
+[data-theme="light"] .files-page .glass-chip:hover {
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .files-topbar {
@@ -422,7 +497,10 @@
   min-height: 0;
   overflow-y: auto;
   padding: 6px clamp(6px, 0.7vw, 12px) 16px;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+  overscroll-behavior: contain;
+  /* 把滚动列表独立出重绘范围：滑动只重绘列表自己，不牵动整块面板 */
+  contain: layout paint style;
 }
 
 .file-row {
@@ -437,14 +515,10 @@
   border: 1px solid transparent;
   color: var(--text);
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, opacity 0.2s;
-  opacity: 0;
-  animation: rowIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: calc(var(--row-i, 0) * 22ms);
-}
-@keyframes rowIn {
-  from { opacity: 0; transform: translateY(7px); }
-  to { opacity: 1; transform: none; }
+  transition: background 0.18s, border-color 0.18s;
+  /* 屏幕外的行跳过布局与绘制；滚动到可见范围时再按记住的高度补上 */
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 68px;
 }
 .file-row:hover {
   background: rgba(255, 255, 255, 0.052);
@@ -650,23 +724,15 @@
 .skeleton-row {
   height: 62px;
   border-radius: 14px;
-  background: linear-gradient(90deg,
-    rgba(255, 255, 255, 0.035) 0%,
-    rgba(255, 255, 255, 0.085) 50%,
-    rgba(255, 255, 255, 0.035) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s linear infinite;
+  background: rgba(255, 255, 255, 0.055);
+  animation: skeletonPulse 1.4s ease-in-out infinite;
 }
 [data-theme="light"] .skeleton-row {
-  background: linear-gradient(90deg,
-    rgba(17, 22, 29, 0.035) 0%,
-    rgba(17, 22, 29, 0.075) 50%,
-    rgba(17, 22, 29, 0.035) 100%);
-  background-size: 200% 100%;
+  background: rgba(17, 22, 29, 0.055);
 }
-@keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.9; }
 }
 
 /* ---------- 适配 ---------- */

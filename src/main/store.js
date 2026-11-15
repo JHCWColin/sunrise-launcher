@@ -19,7 +19,15 @@ function defaultConfig() {
     glass: 1,
     glow: 0.3,
     bgDim: 0.55,
-    background: '',
+    // v1.9.0：暗色 / 亮色模式各自独立的壁纸与遮罩。
+    // bgDim = 深色模式黑色遮罩；bgDimLight = 浅色模式白色遮罩。
+    // 两者取值范围一致（0~0.9），0 都表示完全无遮罩、直接显示原壁纸。
+    bgDimLight: 0.8,
+    backgroundDark: '',
+    backgroundLight: '',
+    // v1.9.0：iPhone 风格自动熄屏常显（AOD）。
+    aodEnabled: false,
+    aodTimeoutSec: 60,
     reduceMotion: false,
     skipIntro: false,
     clock24h: true,
@@ -127,11 +135,23 @@ function normalize(raw) {
   };
 
   merged.theme = merged.theme === 'light' ? 'light' : 'dark';
-  merged.accent = ['sunrise', 'ocean', 'violet', 'emerald'].includes(merged.accent) ? merged.accent : 'sunrise';
+  merged.accent = ['sunrise', 'ocean', 'violet', 'emerald', 'sakura', 'amber', 'glacier', 'dusk'].includes(merged.accent) ? merged.accent : 'sunrise';
   merged.glass = clampNumber(merged.glass, 0.35, 1.6, 1);
   merged.glow = clampNumber(merged.glow, 0, 1.5, 0.3);
+  // v1.9.0 迁移：旧版本只有一个 background 键，升级后深浅两套壁纸
+  // 都沿用它，保证老用户升级不丢自定义壁纸。
+  const legacyBackground = typeof raw.background === 'string' ? raw.background : '';
+  const normalizeBgWithFallback = (value, fallback) => {
+    const normalized = normalizeBackground(value);
+    return normalized || (fallback ? normalizeBackground(fallback) : '');
+  };
   merged.bgDim = clampNumber(merged.bgDim, 0, 0.9, 0.55);
-  merged.background = normalizeBackground(merged.background);
+  merged.bgDimLight = clampNumber(merged.bgDimLight, 0, 0.9, 0.8);
+  merged.backgroundDark = normalizeBgWithFallback(merged.backgroundDark, legacyBackground);
+  merged.backgroundLight = normalizeBgWithFallback(merged.backgroundLight, legacyBackground);
+  delete merged.background;
+  merged.aodEnabled = Boolean(merged.aodEnabled);
+  merged.aodTimeoutSec = Math.round(clampNumber(merged.aodTimeoutSec, 30, 3600, 60));
   merged.reduceMotion = Boolean(merged.reduceMotion);
   merged.skipIntro = Boolean(merged.skipIntro);
   merged.clock24h = Boolean(merged.clock24h);
@@ -179,6 +199,13 @@ function envOverrides(cfg) {
   if (process.env.SUNRISE_THEME) cfg.theme = process.env.SUNRISE_THEME;
   if (process.env.SUNRISE_SKIP_INTRO === '1') cfg.skipIntro = true;
   if (process.env.SUNRISE_AUTO_OPEN === '0') cfg.autoOpen = false;
+  // v1.9.0 开发调试开关（只影响本次运行，不写回配置）：
+  // SUNRISE_AOD=1 强制开启熄屏常显；SUNRISE_AOD_TIMEOUT_SEC 设定超时（秒，
+  // 允许低于 30 秒以便自动化测试，正式配置仍强制 >= 30）。
+  if (process.env.SUNRISE_AOD === '1') cfg.aodEnabled = true;
+  if (process.env.SUNRISE_AOD_TIMEOUT_SEC) {
+    cfg.aodTimeoutSec = Math.round(clampNumber(process.env.SUNRISE_AOD_TIMEOUT_SEC, 5, 3600, 60));
+  }
   return cfg;
 }
 

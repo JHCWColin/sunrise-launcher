@@ -4,7 +4,6 @@ import {
   $, escapeHtml, formatBytes, relativeTime, setIcon, toast,
 } from './ui.js';
 import { state } from './state.js';
-
 const ACTIONS = [
   {
     key: 'wps',
@@ -55,12 +54,12 @@ const ACTIONS = [
     rgbLight: '120, 98, 80',
   },
   {
-    key: 'theme',
-    kind: 'theme',
-    name: '切换主题',
-    icon: ICON.moon,
-    rgb: '232, 217, 196',
-    rgbLight: '120, 98, 80',
+    key: 'usb',
+    kind: 'usb',
+    name: '移动存储设备',
+    icon: APP_ICON.usb,
+    rgb: '226, 168, 133',
+    rgbLight: '176, 108, 76',
   },
   {
     key: 'settings',
@@ -110,8 +109,12 @@ async function handleAction(action, item) {
     if (result && result.ok === false) toast({ type: 'error', message: result.message || '无法打开下载文件夹' });
     return;
   }
-  if (action.kind === 'theme') {
-    if (hooks.onToggleTheme) hooks.onToggleTheme();
+  if (action.kind === 'usb') {
+    if (!state.usbDrives || !state.usbDrives.length) {
+      toast({ type: 'info', message: '未检测到 U 盘：请先把 U 盘插到一体机的 USB 接口。', duration: 4200 });
+      return;
+    }
+    if (hooks.onOpenUsb) hooks.onOpenUsb();
     return;
   }
   if (action.kind === 'settings') {
@@ -166,20 +169,26 @@ function updateRightStatus(status = state.nasStatus) {
   box.title = status.message || '';
 }
 
-function updateThemeAction() {
-  const item = document.querySelector('[data-action="theme"]');
-  if (!item) return;
-  const light = state.config && state.config.theme === 'light';
-  const icon = item.querySelector('.action-icon');
-  if (icon) setIcon(icon, light ? 'moon' : 'sunSmall');
-}
-
-export function updateThemeIcon() {
-  updateThemeAction();
-}
-
 export function updateNasPill(status = state.nasStatus) {
   updateRightStatus(status);
+}
+
+/* 根据主进程的 U 盘检测结果，启用 / 置灰主界面的「移动存储设备」入口。 */
+export function updateUsbEntry(drives = state.usbDrives) {
+  const item = document.querySelector('[data-action="usb"]');
+  if (!item) return;
+  const list = Array.isArray(drives) ? drives : [];
+  const has = list.length > 0;
+  item.classList.toggle('is-off', !has);
+  if (has) {
+    item.removeAttribute('disabled');
+    const first = list[0];
+    const extra = list.length > 1 ? ` 等 ${list.length} 个设备` : '';
+    item.title = `${first.letter} ${first.label || '可移动磁盘'}${extra}`;
+  } else {
+    item.setAttribute('disabled', 'disabled');
+    item.title = '未检测到 U 盘，插入后自动启用';
+  }
 }
 
 function applyAvailability() {
@@ -340,7 +349,7 @@ function renderHomeRecent() {
 export function renderHome() {
   applyAvailability();
   updateRightStatus();
-  updateThemeAction();
+  updateUsbEntry();
   updateSideRecent();
   renderRecentSheet();
   renderHomeRecent();

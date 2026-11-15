@@ -106,17 +106,35 @@ export function applyGlow(value) {
   document.documentElement.style.setProperty('--glow-scale', String(scale));
 }
 
-export function applyBgDim(value) {
-  const n = Number(value);
-  const dim = Number.isFinite(n) ? Math.min(0.9, Math.max(0, n)) : 0.55;
-  document.documentElement.style.setProperty('--bg-dim', String(dim));
+export function applyBgDim(config) {
+  // v1.9.0：同时写入两套遮罩强度，由当前主题决定 CSS 用哪一套。
+  // 两者都允许为 0 —— 即最通透状态：完全无遮罩，直接显示原壁纸。
+  const dark = Number(config && config.bgDim);
+  const light = Number(config && config.bgDimLight);
+  document.documentElement.style.setProperty(
+    '--bg-dim',
+    Number.isFinite(dark) ? String(Math.min(0.9, Math.max(0, dark))) : '0.55',
+  );
+  document.documentElement.style.setProperty(
+    '--bg-dim-light',
+    Number.isFinite(light) ? String(Math.min(0.9, Math.max(0, light))) : '0.8',
+  );
 }
 
-export function applyBackground(filePath) {
+export function wallpaperForTheme(config, theme) {
+  if (!config) return '';
+  const t = (theme || config.theme) === 'light' ? 'light' : 'dark';
+  return (t === 'light' ? config.backgroundLight : config.backgroundDark) || '';
+}
+
+export function applyBackground(config, theme) {
   const wallpaper = document.getElementById('wallpaper');
   if (!wallpaper) return;
+  // v1.9.0：暗色 / 亮色模式各自独立的壁纸；切换主题时换用对应的图。
+  const t = (theme || (config && config.theme)) === 'light' ? 'light' : 'dark';
+  const filePath = config ? wallpaperForTheme(config, t) : '';
   if (filePath) {
-    wallpaper.style.backgroundImage = `url("app://sunrise/__wallpaper__?v=${Date.now()}")`;
+    wallpaper.style.backgroundImage = `url("app://sunrise/__wallpaper__?theme=${t}&v=${Date.now()}")`;
     wallpaper.classList.add('has-custom');
   } else {
     wallpaper.style.backgroundImage = '';
@@ -288,23 +306,6 @@ export function initCursorIdle() {
   window.addEventListener('pointerdown', reset, { passive: true });
   window.addEventListener('keydown', reset, { passive: true });
   reset();
-}
-
-export function ripple(event, element, tone = 'rgba(255,255,255,.18)') {
-  if (!element) return;
-  const rect = element.getBoundingClientRect();
-  const size = Math.max(rect.width, rect.height) * 0.6;
-  const x = (event.clientX || rect.left + rect.width / 2) - rect.left - size / 2;
-  const y = (event.clientY || rect.top + rect.height / 2) - rect.top - size / 2;
-  const span = document.createElement('span');
-  span.className = 'click-ripple';
-  span.style.width = `${size}px`;
-  span.style.height = `${size}px`;
-  span.style.left = `${x}px`;
-  span.style.top = `${y}px`;
-  span.style.background = `radial-gradient(circle, ${tone}, transparent 70%)`;
-  element.appendChild(span);
-  setTimeout(() => span.remove(), 650);
 }
 
 export function copyText(text) {
