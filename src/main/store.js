@@ -30,6 +30,9 @@ function defaultConfig() {
     aodTimeoutSec: 60,
     reduceMotion: false,
     skipIntro: false,
+    // v2.0：开场动画样式（dawn =「破晓」新版，classic = 旧版）与开场音效开关。
+    introStyle: 'dawn',
+    introSound: true,
     clock24h: true,
     showSeconds: false,
     nas: {
@@ -154,6 +157,8 @@ function normalize(raw) {
   merged.aodTimeoutSec = Math.round(clampNumber(merged.aodTimeoutSec, 30, 3600, 60));
   merged.reduceMotion = Boolean(merged.reduceMotion);
   merged.skipIntro = Boolean(merged.skipIntro);
+  merged.introStyle = ['dawn', 'classic'].includes(merged.introStyle) ? merged.introStyle : 'dawn';
+  merged.introSound = merged.introSound !== false;
   merged.clock24h = Boolean(merged.clock24h);
   merged.showSeconds = Boolean(merged.showSeconds);
   merged.autoOpen = Boolean(merged.autoOpen);
@@ -198,6 +203,8 @@ function envOverrides(cfg) {
   if (process.env.SUNRISE_DOWNLOADS_DIR) cfg.downloadsDir = process.env.SUNRISE_DOWNLOADS_DIR;
   if (process.env.SUNRISE_THEME) cfg.theme = process.env.SUNRISE_THEME;
   if (process.env.SUNRISE_SKIP_INTRO === '1') cfg.skipIntro = true;
+  if (process.env.SUNRISE_INTRO_STYLE) cfg.introStyle = process.env.SUNRISE_INTRO_STYLE === 'classic' ? 'classic' : 'dawn';
+  if (process.env.SUNRISE_INTRO_SOUND === '0') cfg.introSound = false;
   if (process.env.SUNRISE_AUTO_OPEN === '0') cfg.autoOpen = false;
   // v1.9.0 开发调试开关（只影响本次运行，不写回配置）：
   // SUNRISE_AOD=1 强制开启熄屏常显；SUNRISE_AOD_TIMEOUT_SEC 设定超时（秒，

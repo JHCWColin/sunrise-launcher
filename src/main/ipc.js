@@ -20,7 +20,7 @@ const { findExistingDownload } = require('./downloads');
 
 const CONFIG_KEYS = new Set([
   'theme', 'accent', 'glass', 'glow', 'bgDim', 'bgDimLight', 'backgroundDark', 'backgroundLight',
-  'reduceMotion', 'skipIntro', 'clock24h', 'showSeconds', 'downloadsDir', 'autoOpen', 'autoOpenTypes',
+  'reduceMotion', 'skipIntro', 'introStyle', 'introSound', 'clock24h', 'showSeconds', 'downloadsDir', 'autoOpen', 'autoOpenTypes',
   'videoPlayer', 'wpsPath', 'autoStart', 'preventSleep', 'showRecent',
   'aodEnabled', 'aodTimeoutSec',
 ]);

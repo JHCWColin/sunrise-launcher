@@ -6,6 +6,7 @@
   place-items: center;
   overflow: hidden;
   background: #0f0d0b;
+  font-family: 'PingFang SC', var(--font-sans);
   transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1),
               transform 1.1s cubic-bezier(0.4, 0, 0.2, 1),
               filter 0.9s cubic-bezier(0.4, 0, 0.2, 1);
@@ -251,4 +252,14 @@
 }
 [data-reduce-motion="true"] .intro-rule {
   width: clamp(220px, 26vw, 460px);
+}
+
+/* v2.0：页面载入时旧版开场先保持静止（黑底），由 intro.js 决定播放哪一套开场，
+   避免选择「破晓」时旧版动画先跑一瞬。 */
+.intro[data-pending] > * {
+  visibility: hidden;
+}
+.intro[data-pending] *,
+.intro[data-pending]::after {
+  animation-play-state: paused !important;
 }

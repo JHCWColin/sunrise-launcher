@@ -277,6 +277,8 @@ function createWindow() {
       spellcheck: false,
       devTools: DEV_WINDOW || DEVTOOLS,
       backgroundThrottling: false,
+      // v2.0：开场音效需要在没有用户手势的情况下播放。
+      autoplayPolicy: 'no-user-gesture-required',
     },
   });
 

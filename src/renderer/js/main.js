@@ -255,6 +255,9 @@ async function boot() {
   playIntro({
     reduceMotion: config.reduceMotion,
     skip: config.skipIntro,
+    style: config.introStyle,
+    sound: config.introSound !== false,
+    version: (state.app && state.app.version) || '',
     onDone: () => {
       revealShell();
       api.nasStatus(true).catch(() => {});

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="./css/fonts.css">
   <link rel="stylesheet" href="./css/base.css">
   <link rel="stylesheet" href="./css/intro.css">
+  <link rel="stylesheet" href="./css/intro-dawn.css">
   <link rel="stylesheet" href="./css/shell.css">
   <link rel="stylesheet" href="./css/files.css">
   <link rel="stylesheet" href="./css/usb.css">
@@ -19,7 +20,7 @@
   <div class="wallpaper" id="wallpaper" aria-hidden="true"></div>
   <div class="wallpaper-dim" aria-hidden="true"></div>
   <div class="wallpaper-veil" aria-hidden="true"></div>
-  <section id="intro" class="intro" aria-label="开场动画">
+  <section id="intro" class="intro" aria-label="开场动画" data-pending>
     <canvas id="intro-canvas" class="intro-canvas"></canvas>
     <div class="intro-sun-wrap" aria-hidden="true">
       <div class="intro-sun-glow"></div>
@@ -35,6 +36,44 @@
       <p class="intro-purpose">让每一堂课，一键启程</p>
       <p class="intro-dev" id="intro-dev">由JHCWColin与DeepSeek共同创作。</p>
     </div>
+  </section>
+
+  <!-- v2.0「破晓」开场动画（默认）。旧版开场保留在上方 #intro，可在设置里切换。 -->
+  <section id="intro-dawn" class="dawn" aria-label="开场动画" hidden>
+    <canvas class="dawn-canvas" aria-hidden="true"></canvas>
+    <div class="dawn-vignette" aria-hidden="true"></div>
+    <header class="dawn-eyebrow">
+      <span class="dawn-eyebrow-line" aria-hidden="true"></span>
+      <span>SUNRISE LAUNCHER</span><i aria-hidden="true">·</i><span id="dawn-version">v1.9.5</span><i aria-hidden="true">·</i><span>为希沃教学一体机打造</span>
+      <span class="dawn-eyebrow-line" aria-hidden="true"></span>
+    </header>
+    <div class="dawn-stage">
+      <h1 class="dawn-title" aria-label="旭日东升">
+        <span data-ch="旭" style="--i:0">旭</span><span data-ch="日" style="--i:1">日</span><span data-ch="东" style="--i:2">东</span><span data-ch="升" style="--i:3">升</span>
+      </h1>
+      <p class="dawn-sub"><i aria-hidden="true"></i><span>一体机启动器</span><i aria-hidden="true"></i></p>
+      <p class="dawn-slogan"><span class="dawn-slogan-text">让每一堂课，一键启程</span><i class="dawn-caret" aria-hidden="true"></i></p>
+      <ul class="dawn-chips" aria-label="主要功能">
+        <li style="--i:0"><span class="dawn-chip-icon" data-icon="wps"></span>WPS Office</li>
+        <li style="--i:1"><span class="dawn-chip-icon" data-icon="board"></span>希沃白板</li>
+        <li style="--i:2"><span class="dawn-chip-icon" data-icon="camera"></span>视频展台</li>
+        <li style="--i:3"><span class="dawn-chip-icon" data-icon="ftp"></span>FTP 课件库</li>
+        <li style="--i:4"><span class="dawn-chip-icon" data-icon="usb"></span>U 盘对拷</li>
+        <li style="--i:5"><span class="dawn-chip-icon" data-icon="moon"></span>熄屏常显</li>
+      </ul>
+    </div>
+    <footer class="dawn-credits">
+      <div class="dawn-credit" style="--i:0"><span class="dawn-role">作者</span><b>JHCWColin</b></div>
+      <span class="dawn-credit-sep" aria-hidden="true"></span>
+      <div class="dawn-credit" style="--i:1"><span class="dawn-role">作者</span><b>DeepSeek</b></div>
+      <span class="dawn-credit-sep" aria-hidden="true"></span>
+      <div class="dawn-credit is-claude" style="--i:2">
+        <span class="dawn-claude-mark" aria-hidden="true"></span>
+        <div class="dawn-credit-text"><span class="dawn-role">动画设计</span><b>Claude Opus 5.5</b></div>
+      </div>
+    </footer>
+    <p class="dawn-skip">轻触任意处跳过</p>
+    <div class="dawn-progress" aria-hidden="true"><i></i></div>
   </section>
 
   <main id="shell" class="shell" aria-hidden="true">
@@ -441,6 +480,29 @@
       </section>
 
       <section class="settings-section">
+        <h3>开场动画</h3>
+        <label class="field">
+          <span>开场动画样式</span>
+          <select id="intro-style">
+            <option value="dawn">破晓 · 新版（默认）</option>
+            <option value="classic">旭日 · 经典版</option>
+          </select>
+        </label>
+        <div class="setting-row">
+          <div class="setting-label"><b>开场音效</b><span>播放开场动画时同步播放合成音效</span></div>
+          <label class="switch"><input type="checkbox" id="intro-sound"><i></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>跳过开场动画</b><span>下次启动直接进入桌面</span></div>
+          <label class="switch"><input type="checkbox" id="skip-intro"><i></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label"><b>预览开场动画</b><span>立即播放一次当前选择的开场动画</span></div>
+          <button id="intro-preview" class="ghost-btn small" type="button">预览</button>
+        </div>
+      </section>
+
+      <section class="settings-section">
         <h3>系统</h3>
         <div class="setting-row">
           <div class="setting-label"><b>开机自动启动</b><span>登录 Windows 后自动进入旭日东升</span></div>
@@ -449,10 +511,6 @@
         <div class="setting-row">
           <div class="setting-label"><b>防止屏幕休眠</b><span>上课期间保持屏幕常亮</span></div>
           <label class="switch"><input type="checkbox" id="prevent-sleep"><i></i></label>
-        </div>
-        <div class="setting-row">
-          <div class="setting-label"><b>跳过开场动画</b><span>下次启动直接进入桌面</span></div>
-          <label class="switch"><input type="checkbox" id="skip-intro"><i></i></label>
         </div>
         <div class="setting-row">
           <div class="setting-label"><b>显示最近课件</b><span>在主界面展示最近打开的课件</span></div>

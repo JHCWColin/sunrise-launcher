@@ -1,4 +1,9 @@
 import { $ } from './ui.js';
+import { playDawnIntro } from './intro-dawn.js';
+import { createIntroAudio } from './intro-audio.js';
+
+/** 开场样式：dawn = v2.0「破晓」（默认），classic = 旧版「旭日」 */
+export const INTRO_STYLES = ['dawn', 'classic'];
 
 let raf = null;
 let cleanupFns = [];
@@ -69,12 +74,47 @@ function startParticles(canvas) {
   };
 }
 
-export function playIntro({ reduceMotion = false, skip = false, onDone }) {
-  const intro = $('#intro');
+/** 旧版开场的配套音效：暖和弦渐强 + 标题逐字钟音，与 intro.css 的时间轴对齐。 */
+function scheduleClassicSound(audio) {
+  const { sfx, NOTE } = audio;
+  const t0 = audio.now + 0.03;
+  sfx.drone(t0, 6.8);
+  sfx.pad(t0 + 0.5, 6.2, 0.05);
+  [NOTE.D5, NOTE.Fs5, NOTE.A5, NOTE.D6].forEach((f, i) => sfx.bell(t0 + 1.55 + i * 0.14, f, 0.13, 2.6));
+  sfx.bell(t0 + 2.75, NOTE.A4, 0.08, 2.4);
+  sfx.sparkle(t0 + 2.95, 5, 0.04);
+}
 
+function playClassicIntro({ reduceMotion = false, sound = true, onDone }) {
+  let intro = $('#intro');
+  if (!intro) {
+    if (onDone) onDone();
+    return;
+  }
+  // 预览 / 重播：替换为一份克隆节点，CSS 动画会从头开始。
+  if (intro.dataset.played) {
+    const fresh = intro.cloneNode(true);
+    fresh.classList.remove('intro-leaving');
+    intro.replaceWith(fresh);
+    intro = fresh;
+  }
+  intro.dataset.played = '1';
+  intro.style.display = '';
+  intro.removeAttribute('aria-hidden');
+  intro.removeAttribute('data-pending');
+
+  const startedAt = performance.now();
   let finished = false;
   let autoTimer = null;
   let removeTimer = null;
+  let audio = null;
+  if (sound) {
+    audio = createIntroAudio({ volume: 0.55 });
+    if (audio) {
+      audio.resume();
+      try { scheduleClassicSound(audio); } catch (_) { audio = null; }
+    }
+  }
 
   const cleanup = () => {
     cleanupFns.forEach((fn) => {
@@ -89,6 +129,7 @@ export function playIntro({ reduceMotion = false, skip = false, onDone }) {
     if (finished) return;
     finished = true;
     cleanup();
+    if (audio) audio.stop(0.9);
     intro.classList.add('intro-leaving');
     intro.setAttribute('aria-hidden', 'true');
     const delay = reduceMotion ? 220 : 900;
@@ -98,19 +139,6 @@ export function playIntro({ reduceMotion = false, skip = false, onDone }) {
     }, delay);
   };
 
-  if (!intro) {
-    if (onDone) onDone();
-    return;
-  }
-
-  if (skip) {
-    finished = true;
-    intro.style.display = 'none';
-    intro.setAttribute('aria-hidden', 'true');
-    if (onDone) onDone();
-    return;
-  }
-
   const canvas = $('#intro-canvas');
   if (canvas && !reduceMotion) {
     const stop = startParticles(canvas);
@@ -118,7 +146,7 @@ export function playIntro({ reduceMotion = false, skip = false, onDone }) {
   }
 
   const onPointer = () => {
-    if (performance.now() < 700) return;
+    if (performance.now() - startedAt < 700) return;
     finish();
   };
   intro.addEventListener('pointerdown', onPointer);
@@ -132,6 +160,46 @@ export function playIntro({ reduceMotion = false, skip = false, onDone }) {
 
   const duration = reduceMotion ? 2200 : 5500;
   autoTimer = setTimeout(finish, duration);
+}
+
+/**
+ * 播放开场动画。
+ * @param {object} opts
+ * @param {'dawn'|'classic'} [opts.style] 开场样式，默认 dawn（v2.0「破晓」）
+ * @param {boolean} [opts.sound] 是否播放开场音效
+ * @param {boolean} [opts.skip] 跳过开场，直接进入桌面
+ * @param {string} [opts.version] 版本号，显示在「破晓」眉题里
+ */
+export function playIntro({
+  reduceMotion = false, skip = false, style = 'dawn', sound = true, version = '', onDone,
+} = {}) {
+  const classic = $('#intro');
+  const dawn = $('#intro-dawn');
+
+  if (skip) {
+    [classic, dawn].forEach((el) => {
+      if (!el) return;
+      el.style.display = 'none';
+      el.setAttribute('aria-hidden', 'true');
+    });
+    if (onDone) onDone();
+    return;
+  }
+
+  if (style === 'classic' || !dawn) {
+    if (dawn) dawn.hidden = true;
+    playClassicIntro({ reduceMotion, sound, onDone });
+    return;
+  }
+
+  playDawnIntro({ reduceMotion, sound, version, onDone });
+  // 「破晓」覆盖在旧版之上；等它的第一帧画出来后再收起旧版黑底，避免闪烁。
+  if (classic) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      classic.style.display = 'none';
+      classic.setAttribute('aria-hidden', 'true');
+    }));
+  }
 }
 
 export function stopIntro() {

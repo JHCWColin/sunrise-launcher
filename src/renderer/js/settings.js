@@ -8,6 +8,7 @@ import { mergeConfig, state } from './state.js';
 import { refreshHome } from './home.js';
 import { setClockConfig } from './clock.js';
 import { setAodClockConfig } from './aod.js';
+import { playIntro } from './intro.js';
 
 const TYPE_LABELS = {
   video: '视频',
@@ -116,6 +117,9 @@ function cacheDom() {
   dom.autoStart = $('#auto-start');
   dom.preventSleep = $('#prevent-sleep');
   dom.skipIntro = $('#skip-intro');
+  dom.introStyle = $('#intro-style');
+  dom.introSound = $('#intro-sound');
+  dom.introPreview = $('#intro-preview');
   dom.showRecent = $('#show-recent');
   dom.aboutMark = $('#about-mark');
   dom.aboutVersion = $('#about-version');
@@ -273,6 +277,8 @@ function syncAll() {
   if (dom.autoStart) dom.autoStart.checked = Boolean(config.autoStart);
   if (dom.preventSleep) dom.preventSleep.checked = config.preventSleep !== false;
   if (dom.skipIntro) dom.skipIntro.checked = Boolean(config.skipIntro);
+  if (dom.introStyle) dom.introStyle.value = config.introStyle === 'classic' ? 'classic' : 'dawn';
+  if (dom.introSound) dom.introSound.checked = config.introSound !== false;
   if (dom.showRecent) dom.showRecent.checked = config.showRecent !== false;
   const version = state.app ? state.app.version : '1.5.0';
   if (dom.aboutVersion) dom.aboutVersion.textContent = `v${version}`;
@@ -617,6 +623,35 @@ function bind() {
       const value = dom.preventSleep.checked;
       if (state.config) state.config.preventSleep = value;
       await savePatch({ preventSleep: value });
+    });
+  }
+  if (dom.introStyle) {
+    dom.introStyle.addEventListener('change', async () => {
+      const value = dom.introStyle.value === 'classic' ? 'classic' : 'dawn';
+      if (state.config) state.config.introStyle = value;
+      await savePatch({ introStyle: value });
+    });
+  }
+  if (dom.introSound) {
+    dom.introSound.addEventListener('change', async () => {
+      const value = dom.introSound.checked;
+      if (state.config) state.config.introSound = value;
+      await savePatch({ introSound: value });
+    });
+  }
+  if (dom.introPreview) {
+    let previewing = false;
+    dom.introPreview.addEventListener('click', () => {
+      if (previewing) return;
+      previewing = true;
+      const config = state.config || {};
+      playIntro({
+        style: config.introStyle,
+        sound: config.introSound !== false,
+        reduceMotion: Boolean(config.reduceMotion),
+        version: (state.app && state.app.version) || '',
+        onDone: () => { previewing = false; },
+      });
     });
   }
   if (dom.skipIntro) {
